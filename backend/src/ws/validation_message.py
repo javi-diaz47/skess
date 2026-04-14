@@ -1,0 +1,26 @@
+def validate_message(data: dict):
+    """
+    Check if the data implements the required interface
+    and returns an error message accordingly
+
+    Parameters:
+        data (dict): Input message data
+
+    Returns:
+        dict: A dictionary with:
+            - "error" (str | None): Error type if the validation fail
+            - "message" (str | None): Error message
+    """
+    if "type" not in data:
+        return {
+            "error": "Invalid Message",
+            "message": "No type was provided",
+        }
+
+    if "payload" not in data:
+        return {
+            "error": "Invalid Message",
+            "message": "No payload was provided",
+        }
+
+    return {"error": None, "message": None}

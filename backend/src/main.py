@@ -1,5 +1,6 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from src.connection_manager import ConnectionManager
+from src.ws.connection_manager import ConnectionManager
+from src.ws.validation_message import validate_message
 
 app = FastAPI(title="Skess")
 
@@ -19,28 +20,12 @@ async def websocket_endpoint(ws: WebSocket, client_id: int):
         while True:
             data = await ws.receive_json()
 
-            if "type" not in data:
-                await manager.send_personal_message(
-                    ws,
-                    {
-                        "error": "Invalid Message",
-                        "message": "No type was provided",
-                    },
-                )
-                continue
-
-            if "payload" not in data:
-                await manager.send_personal_message(
-                    ws,
-                    {
-                        "error": "Invalid Message",
-                        "message": "No payload was provided",
-                    },
-                )
+            val = validate_message(data)
+            if val["error"]:
+                await manager.send_personal_message(ws, val)
                 continue
 
             if "message" not in data["payload"]:
-                pass
                 await manager.send_personal_message(
                     ws,
                     {
