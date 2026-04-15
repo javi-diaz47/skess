@@ -1,9 +1,16 @@
-import { useRef, useState, type SubmitEvent } from "react"
+import { useContext, useRef, useState, type SubmitEvent } from "react"
+import { SessionContext } from "../context/SessionContext"
+import { useNavigate } from "react-router"
 
 export function SessionNicknameForm() {
 
+  const { onCreateSession } = useContext(SessionContext)
+
   const input = useRef<HTMLInputElement>(null)
   const [isEmptyInput, setIsEmptyInput] = useState(false);
+
+
+  const navigate = useNavigate()
 
   const onSubmit = (ev: SubmitEvent<HTMLFormElement>) => {
     ev.preventDefault()
@@ -18,8 +25,8 @@ export function SessionNicknameForm() {
       setIsEmptyInput(false)
     }
 
-    const user = { id: crypto.randomUUID(), name: input.current.value }
-    console.log(user)
+    onCreateSession({ name: input.current.value })
+    navigate("/")
   }
 
   return (

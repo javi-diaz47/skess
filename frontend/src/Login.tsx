@@ -1,6 +1,6 @@
 import { SessionNicknameForm } from "./components/SessionNicknameForm"
 
-function App() {
+export function Login() {
 
   return (
     <main className="h-screen bg-background-50 text-text-900 dark:bg-background-950 dark:text-text-50 p-4">
@@ -11,5 +11,3 @@ function App() {
     </main >
   )
 }
-
-export default App
