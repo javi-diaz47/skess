@@ -6,6 +6,7 @@ export interface UserSession {
 
 export interface SessionContext {
   session: UserSession
+  isLoading: boolean
   hasSession: () => boolean
   onCreateSession: (newSession: UserSession) => void
 }
@@ -15,6 +16,7 @@ export const SessionContext = createContext<SessionContext>(null)
 export const SessionProvider = ({ children }) => {
 
   const [session, setSession] = useState<UserSession | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   const getLocalSession = () => {
     const data = sessionStorage.getItem("session")
@@ -31,6 +33,7 @@ export const SessionProvider = ({ children }) => {
 
   useEffect(() => {
     getLocalSession()
+    setIsLoading(false)
   }, [])
 
   const onCreateSession = (newSession: UserSession) => {
@@ -42,8 +45,10 @@ export const SessionProvider = ({ children }) => {
     return session !== null
   }
 
+  console.log(session)
+
   return (
-    <SessionContext.Provider value={{ session, hasSession, onCreateSession }}>
+    <SessionContext.Provider value={{ session, isLoading, hasSession, onCreateSession }}>
       {children}
     </SessionContext.Provider>
   )
