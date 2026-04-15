@@ -13,7 +13,7 @@ def ping():
 
 
 @app.websocket("/ws/{client_id}")
-async def websocket_endpoint(ws: WebSocket, client_id: int):
+async def websocket_endpoint(ws: WebSocket, client_id: str):
     await manager.connect(ws)
 
     try:
@@ -35,7 +35,7 @@ async def websocket_endpoint(ws: WebSocket, client_id: int):
                 )
                 continue
 
-            await manager.broadcast(data)
+            await manager.broadcast({"id": client_id, **data})
 
     except WebSocketDisconnect:
         manager.disconnect(ws)
