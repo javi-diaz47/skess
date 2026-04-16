@@ -5,6 +5,7 @@ import { BrowserRouter, Route, Routes } from 'react-router'
 import { ProtectedRoutes } from './ProtectedRoutes.tsx'
 import { SessionProvider } from './context/SessionContext.tsx'
 import { Login } from './Login.tsx'
+import { Home } from './Home.tsx'
 
 
 createRoot(document.getElementById('root')!).render(
@@ -15,7 +16,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/login" element={<Login />} />
 
           <Route element={<ProtectedRoutes />}>
-            <Route path="/" element={<h1>Home</h1>} />
+            <Route path="/" element={<Home />} />
           </Route>
 
         </Routes>
