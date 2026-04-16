@@ -1,10 +1,26 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import App from './App.tsx'
+import { BrowserRouter, Route, Routes } from 'react-router'
+import { ProtectedRoutes } from './ProtectedRoutes.tsx'
+import { SessionProvider } from './context/SessionContext.tsx'
+import { Login } from './Login.tsx'
+import { Home } from './Home.tsx'
+
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <SessionProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+
+          <Route element={<ProtectedRoutes />}>
+            <Route path="/" element={<Home />} />
+          </Route>
+
+        </Routes>
+      </BrowserRouter>
+    </SessionProvider>
   </StrictMode>,
 )
