@@ -1,8 +1,11 @@
 import { createContext, useEffect, useState } from "react"
 
 export interface UserSession {
+  id: string
   name: string
 }
+
+type CreateUserSession = Omit<UserSession, "id">
 
 export interface SessionContext {
   session: UserSession
@@ -19,7 +22,7 @@ export const SessionProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true)
 
   const getLocalSession = () => {
-    const data = sessionStorage.getItem("session")
+    const data = localStorage.getItem("session")
     if (data === null) return;
 
     const newSession: UserSession = JSON.parse(data)
@@ -28,7 +31,7 @@ export const SessionProvider = ({ children }) => {
 
   const setLocalSession = (session: UserSession) => {
     const data = JSON.stringify(session)
-    sessionStorage.setItem("session", data)
+    localStorage.setItem("session", data)
   }
 
   useEffect(() => {
@@ -36,7 +39,10 @@ export const SessionProvider = ({ children }) => {
     setIsLoading(false)
   }, [])
 
-  const onCreateSession = (newSession: UserSession) => {
+  const onCreateSession = (createSession: CreateUserSession) => {
+    if (hasSession()) return;
+
+    const newSession: UserSession = { id: crypto.randomUUID(), ...createSession }
     setSession(newSession)
     setLocalSession(newSession)
   }
