@@ -3,12 +3,15 @@ import { SessionContext } from "./context/SessionContext"
 
 export function Home() {
 
-  const { session } = useContext(SessionContext)
+  const { session, onDeleteSession } = useContext(SessionContext)
   return (
     <div>
       <h2>Home</h2>
       <p>{session.id}</p>
       <p>{session.name}</p>
+      <button onClick={onDeleteSession}>
+        Close session
+      </button>
     </div>
   )
 }

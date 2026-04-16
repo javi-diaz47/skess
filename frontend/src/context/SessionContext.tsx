@@ -12,6 +12,7 @@ export interface SessionContext {
   isLoading: boolean
   hasSession: () => boolean
   onCreateSession: (newSession: UserSession) => void
+  onDeleteSession: () => void
 }
 
 export const SessionContext = createContext<SessionContext>(null)
@@ -47,6 +48,12 @@ export const SessionProvider = ({ children }) => {
     setLocalSession(newSession)
   }
 
+  const onDeleteSession = () => {
+    if (!hasSession()) return;
+    setSession(null)
+    localStorage.removeItem("session")
+  }
+
   const hasSession = () => {
     return session !== null
   }
@@ -54,7 +61,7 @@ export const SessionProvider = ({ children }) => {
   console.log(session)
 
   return (
-    <SessionContext.Provider value={{ session, isLoading, hasSession, onCreateSession }}>
+    <SessionContext.Provider value={{ session, isLoading, hasSession, onCreateSession, onDeleteSession }}>
       {children}
     </SessionContext.Provider>
   )
