@@ -1,3 +1,4 @@
+from uuid import uuid4
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from src.ws.connection_manager import ConnectionManager
 from src.ws.validation_message import validate_message
@@ -35,7 +36,10 @@ async def websocket_endpoint(ws: WebSocket, client_id: str):
                 )
                 continue
 
-            await manager.broadcast({"id": client_id, **data})
+            event_id = str(uuid4())
+            await manager.broadcast(
+                {"event_id": event_id, "user_id": client_id, **data}
+            )
 
     except WebSocketDisconnect:
         manager.disconnect(ws)
