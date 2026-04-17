@@ -1,6 +1,6 @@
 from uuid import uuid4
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from src.ws.connection_manager import ConnectionManager
+from src.ws.connection_manager import Connection, ConnectionManager, User
 from src.ws.validation_message import validate_message
 
 app = FastAPI(title="Skess")
@@ -13,9 +13,10 @@ def ping():
     return "pong!"
 
 
-@app.websocket("/ws/{client_id}")
-async def websocket_endpoint(ws: WebSocket, client_id: str):
-    await manager.connect(ws)
+@app.websocket("/ws/{client_id}/{client_name}")
+async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
+    conn = Connection(User(client_id, client_name), ws)
+    await manager.connect(conn)
 
     try:
         while True:
@@ -23,12 +24,12 @@ async def websocket_endpoint(ws: WebSocket, client_id: str):
 
             val = validate_message(data)
             if val["error"]:
-                await manager.send_personal_message(ws, val)
+                await manager.send_personal_message(conn, val)
                 continue
 
             if "message" not in data["payload"]:
                 await manager.send_personal_message(
-                    ws,
+                    conn,
                     {
                         "error": "Invalid Message",
                         "message": "Payload must contain a property message of type string",
@@ -38,9 +39,14 @@ async def websocket_endpoint(ws: WebSocket, client_id: str):
 
             event_id = str(uuid4())
             await manager.broadcast(
-                {"event_id": event_id, "user_id": client_id, **data}
+                {
+                    "event_id": event_id,
+                    "user": conn.user.__dict__,
+                    "type": data["type"],
+                    "payload": data["payload"],
+                }
             )
 
     except WebSocketDisconnect:
-        manager.disconnect(ws)
+        manager.disconnect(conn)
         await manager.broadcast(f"{client_id} disconnected")
