@@ -24,11 +24,22 @@ class ConnectionManager:
         self.active_conns = {}
 
     async def connect(self, conn: Connection):
+        if conn.user.id in self.active_conns:
+            prev_conn = self.active_conns[conn.user.id]
+            await prev_conn.ws.close(4002, "Session replaced by new login")
+            self.disconnect(prev_conn)
+
         await conn.ws.accept()
         self.active_conns[conn.user.id] = conn
 
     def disconnect(self, conn: Connection):
-        self.active_conns.pop(conn.user.id)
+        if conn.user.id not in self.active_conns:
+            return
+
+        to_delete = self.active_conns[conn.user.id]
+
+        if to_delete.ws == conn.ws:
+            self.active_conns.pop(to_delete.user.id)
 
     async def send_personal_message(self, conn: Connection, data):
         await conn.ws.send_json(data)

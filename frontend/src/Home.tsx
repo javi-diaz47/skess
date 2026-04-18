@@ -12,7 +12,6 @@ export function Home() {
     ev.preventDefault()
 
     onSendMessage({
-      "user_id": session.id,
       "type": "guess",
       "payload": {
         "message": input.current.value
