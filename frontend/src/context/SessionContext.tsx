@@ -3,6 +3,7 @@ import { createContext, useEffect, useState } from "react"
 export interface UserSession {
   id: string
   name: string
+  color: string
 }
 
 type CreateUserSession = Omit<UserSession, "id">

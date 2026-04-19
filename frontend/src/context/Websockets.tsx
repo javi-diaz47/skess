@@ -50,6 +50,8 @@ export const WebsocketProvider = ({ children }) => {
 
   const onClose = (ev: CloseEvent) => {
 
+    if (ev.reason.length === 0) return;
+
     const message: GuessSocketEvent = {
       event_id: "0",
       user: session,
