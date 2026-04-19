@@ -41,12 +41,15 @@ export function Home() {
   const onSubmit = (ev: SubmitEvent<HTMLFormElement>) => {
     ev.preventDefault()
 
+    if (input.current.value.length === 0) return;
+
     onSendMessage({
       "type": "guess",
       "payload": {
         "message": input.current.value
       }
     })
+
     input.current.value = ""
   }
 
@@ -59,14 +62,14 @@ export function Home() {
       <button onClick={onDeleteSession}>
         Close session
       </button>
-      <ul className="">
+      <ul className="h-72 w-72 bg-background-100 dark:bg-background-900 overflow-y-scroll p-2">
         {
           messages && messages.map(item => (
-            <li key={item.event_id} className="flex gap-2">
-              <span className={`font-bold ${colors[item.user.color]}`}>
-                {item.user.id === session.id ? 'You' : item.user.name}:
-              </span>
-              <p className="">
+            <li key={item.event_id}>
+              <p className="break-all">
+                <span className={`mr-2 font-bold ${colors[item.user.color]}`}>
+                  {item.user.id === session.id ? 'You' : item.user.name}:
+                </span>
                 {item.payload.message}
               </p>
             </li>
@@ -74,7 +77,7 @@ export function Home() {
         }
       </ul>
       <form onSubmit={onSubmit}>
-        <input ref={input} name="guess" type="text" placeholder="Type your guess" />
+        <input ref={input} maxLength={40} name="guess" type="text" placeholder="Type your guess" />
         <button>
           send
         </button>
