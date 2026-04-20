@@ -1,20 +1,51 @@
 from fastapi import WebSocket
 
 
+class User:
+    id: str
+    name: str
+    color: str
+
+    def __init__(self, id: str, name: str, color: str):
+        self.id = id
+        self.name = name
+        self.color = color
+
+
+class Connection:
+    user: User
+    ws: WebSocket
+
+    def __init__(self, user: User, ws: WebSocket):
+        self.user = user
+        self.ws = ws
+
+
 class ConnectionManager:
     def __init__(self):
-        self.active_conns = []
+        self.active_conns = {}
 
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_conns.append(websocket)
+    async def connect(self, conn: Connection):
+        if conn.user.id in self.active_conns:
+            prev_conn = self.active_conns[conn.user.id]
+            await prev_conn.ws.close(4002, "Session replaced by new login")
+            self.disconnect(prev_conn)
 
-    def disconnect(self, websocket: WebSocket):
-        self.active_conns.remove(websocket)
+        await conn.ws.accept()
+        self.active_conns[conn.user.id] = conn
 
-    async def send_personal_message(self, websocket: WebSocket, data):
-        await websocket.send_json(data)
+    def disconnect(self, conn: Connection):
+        if conn.user.id not in self.active_conns:
+            return
+
+        to_delete = self.active_conns[conn.user.id]
+
+        if to_delete.ws == conn.ws:
+            self.active_conns.pop(to_delete.user.id)
+
+    async def send_personal_message(self, conn: Connection, data):
+        await conn.ws.send_json(data)
 
     async def broadcast(self, data):
-        for conn in self.active_conns:
-            await conn.send_json(data)
+        for id in self.active_conns:
+            await self.active_conns[id].ws.send_json(data)
