@@ -1,5 +1,5 @@
 import getStroke, { type StrokeOptions } from "perfect-freehand"
-import { useEffect, useRef, type PointerEvent } from "react"
+import { useEffect, useRef, useState, type PointerEvent } from "react"
 import { getSvgPathFromStroke } from "../utils/getSvgPathFromStroke"
 
 const STROKE_OPTIONS: StrokeOptions = {
@@ -18,7 +18,14 @@ const STROKE_OPTIONS: StrokeOptions = {
   },
 }
 
+interface Path {
+  path: Path2D,
+  color: string
+}
+
 export function SketchBoard() {
+
+  const [paths, setPaths] = useState<Path[]>([])
 
   const canvas = useRef<HTMLCanvasElement>(null)
   const svgPath = useRef<SVGPathElement>(null)
@@ -28,20 +35,21 @@ export function SketchBoard() {
 
   const isPointerDown = useRef(false)
 
-  const onPointerDown = (ev: PointerEvent<HTMLCanvasElement>) => {
+  const onPointerDown = () => {
     isPointerDown.current = true
   }
 
-  const onPointerUp = (ev: PointerEvent<HTMLCanvasElement>) => {
+  const onPointerUp = () => {
     isPointerDown.current = false
 
     if (!canvas.current) return;
 
-    const ctx = canvas.current.getContext('2d')
     const newPath = new Path2D(lastPath.current)
 
-    ctx.fill(newPath)
+    setPaths(prev => [...prev, { path: newPath, color: 'green' }])
     points.current = []
+
+    svgPath.current?.setAttribute("d", "")
   }
 
   const onPointerMove = (ev: PointerEvent<HTMLCanvasElement>) => {
@@ -59,6 +67,19 @@ export function SketchBoard() {
 
   }
 
+  const sketch = () => {
+    const ctx = canvas.current.getContext('2d')
+
+    paths.forEach(cur => {
+      ctx.fillStyle = cur.color
+      ctx.fill(cur.path)
+    })
+  }
+
+  useEffect(() => {
+    sketch()
+  }, [paths])
+
 
   useEffect(() => {
     if (canvas.current === null) return;
@@ -70,7 +91,6 @@ export function SketchBoard() {
     canvas.current.height = rect.height * dpr;
 
     canvas.current.getContext('2d').scale(dpr, dpr);
-
 
   }, [])
 
