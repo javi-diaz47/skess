@@ -51,12 +51,14 @@ export function SketchBoard() {
 
   const isPointerDown = useRef(false)
 
-  const onPointerDown = () => {
+  const onPointerDown = (ev: PointerEvent<HTMLCanvasElement>) => {
     isPointerDown.current = true
+    ev.currentTarget.setPointerCapture(ev.pointerId)
   }
 
-  const onPointerUp = () => {
+  const onPointerUp = (ev: PointerEvent<HTMLCanvasElement>) => {
     isPointerDown.current = false
+    ev.currentTarget.releasePointerCapture(ev.pointerId)
 
     if (!canvas.current) return;
 
@@ -124,7 +126,8 @@ export function SketchBoard() {
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
-        ></canvas>
+          onPointerCancel={onPointerUp}
+        />
         <svg className="w-96 h-96 absolute top-0 pointer-events-none">
           <g>
             <path ref={svgPath} />
