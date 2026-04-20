@@ -1,5 +1,6 @@
 import { useContext } from "react"
 import { SessionContext } from "./context/SessionContext"
+import { SketchBoard } from "./components/SketchBoard"
 
 export function Home() {
 
@@ -12,6 +13,7 @@ export function Home() {
       <button onClick={onDeleteSession}>
         Close session
       </button>
+      <SketchBoard />
     </div>
   )
 }
