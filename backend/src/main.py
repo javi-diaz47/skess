@@ -56,14 +56,36 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
                 await manager.send_personal_message(conn, val)
                 continue
 
-            if "message" not in data["payload"]:
-                await manager.send_personal_message(
-                    conn,
-                    {
-                        "error": "Invalid Message",
-                        "message": "Payload must contain a property message of type string",
-                    },
-                )
+            if data["type"] == "guess":
+                if "message" not in data["payload"]:
+                    await manager.send_personal_message(
+                        conn,
+                        {
+                            "error": "Invalid Message",
+                            "message": "Payload must contain a property message of type string",
+                        },
+                    )
+                    continue
+            elif data["type"] == "sketch":
+                if "path" not in data["payload"]:
+                    await manager.send_personal_message(
+                        conn,
+                        {
+                            "error": "Invalid Message",
+                            "message": "Payload must contain a property path of type string",
+                        },
+                    )
+                    continue
+                if "color" not in data["payload"]:
+                    await manager.send_personal_message(
+                        conn,
+                        {
+                            "error": "Invalid Message",
+                            "message": "Payload must contain a property color of type string with the hexadecimal color of the path",
+                        },
+                    )
+                    continue
+            else:
                 continue
 
             event_id = str(uuid4())
