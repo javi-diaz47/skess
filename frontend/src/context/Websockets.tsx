@@ -19,10 +19,15 @@ export type GuessSocketEvent = BaseSocketEvent<"guess", { message: string }>
 
 export type CreateGuessSocketEvent = CreateSocketEvent<GuessSocketEvent>
 
+export type SketchSocketEvent = BaseSocketEvent<"sketch", { path: string, color: string }>
+
+export type CreateSketchSocketEvent = CreateSocketEvent<SketchSocketEvent>
+
 
 export interface WebsocketSession {
   messages: GuessSocketEvent[]
-  onSendMessage: (message: CreateGuessSocketEvent) => void
+  sketch: SketchSocketEvent[]
+  onSendMessage: (message: CreateGuessSocketEvent | CreateSketchSocketEvent) => void
 }
 
 export const WebsocketContext = createContext<WebsocketSession | null>(null)
@@ -30,7 +35,9 @@ export const WebsocketContext = createContext<WebsocketSession | null>(null)
 export const WebsocketProvider = ({ children }) => {
 
   const { session, hasSession } = useContext(SessionContext)
+
   const [messages, setMessages] = useState<GuessSocketEvent[]>([])
+  const [sketch, setSketch] = useState<SketchSocketEvent[]>([])
 
   const ws = useRef<WebSocket | null>(null)
 
@@ -39,6 +46,10 @@ export const WebsocketProvider = ({ children }) => {
 
     if (data.type === "guess") {
       setMessages(prev => [...prev, data])
+    }
+
+    if (data.type === "sketch") {
+      setSketch(prev => [...prev, data])
     }
 
   }
@@ -86,6 +97,7 @@ export const WebsocketProvider = ({ children }) => {
   return (
     <WebsocketContext.Provider value={{
       messages,
+      sketch,
       onSendMessage
     }}>
       {children}
