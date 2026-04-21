@@ -2,7 +2,7 @@ import { useContext, useRef, type SubmitEvent } from "react"
 import { SessionContext } from "./context/SessionContext"
 import { WebsocketContext } from "./context/Websockets";
 import { Chat } from "./components/Chat";
-
+import { SketchBoard } from "./components/SketchBoard"
 
 export function Home() {
 
@@ -41,6 +41,7 @@ export function Home() {
           send
         </button>
       </form>
+      <SketchBoard />
     </div >
   )
 }
