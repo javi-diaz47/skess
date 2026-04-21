@@ -1,6 +1,7 @@
 import getStroke, { type StrokeOptions } from "perfect-freehand"
-import { useEffect, useRef, useState, type PointerEvent } from "react"
+import { useContext, useEffect, useRef, useState, type PointerEvent } from "react"
 import { getSvgPathFromStroke } from "../utils/getSvgPathFromStroke"
+import { WebsocketContext } from "../context/Websockets"
 
 const STROKE_OPTIONS: StrokeOptions = {
   size: 8,
@@ -51,6 +52,8 @@ export function SketchBoard() {
 
   const isPointerDown = useRef(false)
 
+  const { sketch: pathsWebscoket, onSendMessage } = useContext(WebsocketContext)
+
   const onPointerDown = (ev: PointerEvent<HTMLCanvasElement>) => {
     isPointerDown.current = true
     ev.currentTarget.setPointerCapture(ev.pointerId)
@@ -82,6 +85,14 @@ export function SketchBoard() {
 
     lastPath.current = pathData
 
+    onSendMessage({
+      type: "sketch",
+      payload: {
+        color,
+        path: lastPath.current
+      }
+    })
+
     svgPath.current.setAttribute("fill", color)
     svgPath.current?.setAttribute("d", pathData)
 
@@ -101,6 +112,12 @@ export function SketchBoard() {
   useEffect(() => {
     sketch()
   }, [paths])
+
+  useEffect(() => {
+    if (!pathsWebscoket.length) return
+    const N = pathsWebscoket.length
+    setPaths(prev => [...prev, { path: new Path2D(pathsWebscoket[N - 1].payload.path), color: pathsWebscoket[N - 1].payload.color }])
+  }, [pathsWebscoket])
 
 
   useEffect(() => {
