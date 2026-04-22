@@ -1,24 +1,9 @@
-import getStroke, { type StrokeOptions } from "perfect-freehand"
+import getStroke from "perfect-freehand"
 import { useContext, useEffect, useRef, useState, type PointerEvent } from "react"
 import { getSvgPathFromStroke } from "../utils/getSvgPathFromStroke"
 import { WebsocketContext } from "../context/Websockets"
 import { SKETCH_COLORS } from "../contants/sketchColors"
-
-const STROKE_OPTIONS: StrokeOptions = {
-  size: 8,
-  smoothing: 0.5,
-  thinning: 0.5,
-  streamline: 0.5,
-  easing: (t) => t,
-  start: {
-    taper: 0,
-    cap: true,
-  },
-  end: {
-    taper: 0,
-    cap: true,
-  },
-}
+import { STROKE_OPTIONS } from "../contants/strokeOptions"
 
 interface Path {
   path: Path2D,
@@ -103,7 +88,10 @@ export function SketchBoard() {
   useEffect(() => {
     if (!pathsWebscoket.length) return
     const N = pathsWebscoket.length
-    setPaths(prev => [...prev, { path: new Path2D(pathsWebscoket[N - 1].payload.path), color: pathsWebscoket[N - 1].payload.color }])
+    setPaths(prev => [...prev, {
+      path: new Path2D(pathsWebscoket[N - 1].payload.path),
+      color: pathsWebscoket[N - 1].payload.color
+    }])
   }, [pathsWebscoket])
 
 
