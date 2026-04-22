@@ -3,6 +3,7 @@ import { SessionContext } from "./context/SessionContext"
 import { WebsocketContext } from "./context/Websockets";
 import { Chat } from "./components/Chat";
 import { SketchBoard } from "./components/SketchBoard"
+import { SketchBoardProvider } from "./context/SketchBoardContext";
 
 export function Home() {
 
@@ -41,7 +42,9 @@ export function Home() {
           send
         </button>
       </form>
-      <SketchBoard />
+      <SketchBoardProvider>
+        <SketchBoard />
+      </SketchBoardProvider>
     </div >
   )
 }
