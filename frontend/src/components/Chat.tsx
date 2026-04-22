@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import type { GuessSocketEvent } from "../context/Websockets";
 import { SessionContext } from "../context/SessionContext";
-import { COLORS } from "../contants/colors";
+import { CHAT_COLORS } from "../contants/chatColors";
 
 export function Chat({ messages }: { messages: GuessSocketEvent[] }) {
   const { session } = useContext(SessionContext)
@@ -11,7 +11,7 @@ export function Chat({ messages }: { messages: GuessSocketEvent[] }) {
         messages && messages.map(item => (
           <li key={item.event_id}>
             <p className="break-all">
-              <span className={`mr-2 font-bold ${COLORS[item.user.color]}`}>
+              <span className={`mr-2 font-bold ${CHAT_COLORS[item.user.color]}`}>
                 {item.user.id === session.id ? 'You' : item.user.name}:
               </span>
               {item.payload.message}

@@ -2,6 +2,7 @@ import getStroke, { type StrokeOptions } from "perfect-freehand"
 import { useContext, useEffect, useRef, useState, type PointerEvent } from "react"
 import { getSvgPathFromStroke } from "../utils/getSvgPathFromStroke"
 import { WebsocketContext } from "../context/Websockets"
+import { SKETCH_COLORS } from "../contants/sketchColors"
 
 const STROKE_OPTIONS: StrokeOptions = {
   size: 8,
@@ -24,23 +25,9 @@ interface Path {
   color: string
 }
 
-
-export const COLORS = {
-  red: { light: "#f87171", base: "#dc2626", dark: "#991b1b" },
-  orange: { light: "#fb923c", base: "#ea580c", dark: "#9a3412" },
-  yellow: { light: "#facc15", base: "#ca8a04", dark: "#854d0e" },
-  green: { light: "#4ade80", base: "#16a34a", dark: "#166534" },
-  blue: { light: "#60a5fa", base: "#2563eb", dark: "#1e40af" },
-  purple: { light: "#c084fc", base: "#9333ea", dark: "#6b21a8" },
-  pink: { light: "#f472b6", base: "#db2777", dark: "#9d174d" },
-
-  black: { light: "#000", base: "#000", dark: "#000" },
-  white: { light: "#fff", base: "#fff", dark: "#fff" },
-};
-
 export function SketchBoard() {
 
-  const [color, setColor] = useState(COLORS["black"]["base"])
+  const [color, setColor] = useState(SKETCH_COLORS["black"]["base"])
 
   const [paths, setPaths] = useState<Path[]>([])
 
@@ -152,7 +139,7 @@ export function SketchBoard() {
         </svg>
       </div>
       <div className="flex gap-1 p-2 bg-background-100 dark:bg-background-800 rounded-lg w-fit">
-        {Object.entries(COLORS).map(([name, value]) => {
+        {Object.entries(SKETCH_COLORS).map(([name, value]) => {
           const c = value.base;
 
           return (
