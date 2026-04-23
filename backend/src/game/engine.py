@@ -11,7 +11,8 @@ class Game:
         self.N = len(users)
         self.word = ""
 
-        self.leadingBoard = Leaderboard(users)
+        self.state = "start"
+        self.lb = Leaderboard(users)
 
     def start(self):
         if self.sketcher_index == -1:
@@ -19,15 +20,26 @@ class Game:
         else:
             self.sketcher_index = (self.sketcher_index + 1) % self.N
 
+        self.state = "choose"
         words = random.choices(WORDS, k=3)
-        return (self.sketcher_index, words)
+        return (self.users[self.sketcher_index], words)
 
     def choose(self, word: str):
         self.word = word
+        self.state = "guess"
 
     def guess(self, id, guess):
-        if guess == self.word:
-            return self.leadingBoard.updateScore(id, MAX_SCORE)
+        if guess == self.word and self.state == "guess":
+            return self.lb.updateScore(id, MAX_SCORE)
 
     def end(self):
-        return self.leadingBoard.get_leaderboard()
+        self.state = "end"
+        return self.lb.get_leaderboard()
+
+    def add_user(self, id):
+        self.users.append(id)
+        self.lb.add_user(id)
+        self.N = len(self.users)
+
+    def get_state(self) -> str:
+        return self.state
