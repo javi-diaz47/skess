@@ -16,12 +16,13 @@ type BaseSocketEvent<T, U> = {
 type CreateSocketEvent<SocketEvent> = Omit<SocketEvent, "event_id" | "user">
 
 export type GuessSocketEvent = BaseSocketEvent<"guess", { message: string }>
-
 export type CreateGuessSocketEvent = CreateSocketEvent<GuessSocketEvent>
 
 export type SketchSocketEvent = BaseSocketEvent<"sketch", { path: string, color: string, sketching: boolean }>
-
 export type CreateSketchSocketEvent = CreateSocketEvent<SketchSocketEvent>
+
+export type ChooseSocketEvent = BaseSocketEvent<"choose_options", { words: string[] }>
+export type CreateChooseSelectionSocketEvent = CreateSocketEvent<BaseSocketEvent<"choose_selection", { word: string }>>
 
 
 export interface WebsocketSession {
@@ -33,6 +34,7 @@ export interface WebsocketSession {
 
 export type SocketEvents = {
   guess: GuessSocketEvent,
+  choose_options: ChooseSocketEvent,
   sketch: SketchSocketEvent,
   close: CloseEvent
 }
@@ -44,7 +46,7 @@ export type WebSocketContextValue = {
     fn: (ev: SocketEvents[K]) => void
   ) => () => void
 
-  send: (ev: CreateGuessSocketEvent | CreateSketchSocketEvent) => void
+  send: (ev: CreateGuessSocketEvent | CreateSketchSocketEvent | CreateChooseSelectionSocketEvent) => void
 
 }
 
