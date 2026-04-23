@@ -1,6 +1,5 @@
-import { useContext } from "react"
 import { SKETCH_COLORS } from "../contants/sketchColors"
-import { SketchBoardContext } from "../context/SketchBoardContext"
+import { useSketch } from "../hooks/useSketch"
 
 export function SketchBoard() {
 
@@ -12,11 +11,10 @@ export function SketchBoard() {
     onPointerDown,
     onPointerUp,
     onPointerMove,
-  } = useContext(SketchBoardContext)
+  } = useSketch()
 
   return (
     <>
-
       <div className="relative">
         <canvas
           ref={canvas}

@@ -1,8 +1,8 @@
-import { createContext, useContext, useEffect, useRef, useState, type PointerEvent, type Ref } from "react";
+import { useContext, useEffect, useRef, useState, type PointerEvent } from "react"
+import { WebSocketContext } from "../context/WebsSocketsContext"
 import { getSvgPathFromStroke } from "../utils/getSvgPathFromStroke";
 import getStroke from "perfect-freehand";
 import { STROKE_OPTIONS } from "../contants/strokeOptions";
-import { WebsocketContext } from "./Websockets";
 import { SKETCH_COLORS } from "../contants/sketchColors";
 
 interface Path {
@@ -11,35 +11,19 @@ interface Path {
 }
 
 
-interface SketchBoardInterface {
-  color: string,
+export const useSketch = () => {
 
-  canvas: Ref<HTMLCanvasElement>,
-  svgPath: Ref<SVGPathElement>,
-
-  onChangeColor: (color: string) => void
-  onPointerDown: (ev: PointerEvent<HTMLCanvasElement>) => void,
-  onPointerUp: (ev: PointerEvent<HTMLCanvasElement>) => void,
-  onPointerMove: (ev: PointerEvent<HTMLCanvasElement>) => void
-}
-
-export const SketchBoardContext = createContext<SketchBoardInterface>(null)
-
-export const SketchBoardProvider = ({ children }) => {
-
-  const [color, setColor] = useState(SKETCH_COLORS["black"]["base"])
+  const { subscribe, send } = useContext(WebSocketContext)
 
   const [paths, setPaths] = useState<Path[]>([])
+  const [color, setColor] = useState(SKETCH_COLORS["black"]["base"])
 
   const canvas = useRef<HTMLCanvasElement>(null)
   const svgPath = useRef<SVGPathElement>(null)
-  const lastPath = useRef('')
 
   const points = useRef<number[][]>([])
-
+  const lastPath = useRef('')
   const isPointerDown = useRef(false)
-
-  const { sketch: pathsWebscoket, onSendMessage } = useContext(WebsocketContext)
 
   const onChangeColor = (color: string) => {
     setColor(color)
@@ -57,8 +41,17 @@ export const SketchBoardProvider = ({ children }) => {
     if (!canvas.current) return;
 
     const newPath = new Path2D(lastPath.current)
-
     setPaths(prev => [...prev, { path: newPath, color }])
+
+    send({
+      type: "sketch",
+      payload: {
+        color,
+        sketching: false,
+        path: lastPath.current
+      }
+    })
+
     points.current = []
 
     svgPath.current.setAttribute("fill", "")
@@ -76,10 +69,11 @@ export const SketchBoardProvider = ({ children }) => {
 
     lastPath.current = pathData
 
-    onSendMessage({
+    send({
       type: "sketch",
       payload: {
         color,
+        sketching: true,
         path: lastPath.current
       }
     })
@@ -98,23 +92,12 @@ export const SketchBoardProvider = ({ children }) => {
       ctx.fill(cur.path)
       ctx.closePath()
     })
+
   }
 
-  useEffect(() => {
-    sketch()
-  }, [paths])
 
   useEffect(() => {
-    if (!pathsWebscoket.length) return
-    const N = pathsWebscoket.length
-    setPaths(prev => [...prev, {
-      path: new Path2D(pathsWebscoket[N - 1].payload.path),
-      color: pathsWebscoket[N - 1].payload.color
-    }])
-  }, [pathsWebscoket])
 
-
-  useEffect(() => {
     if (canvas.current === null) return;
 
     const rect = canvas.current.getBoundingClientRect()
@@ -125,23 +108,45 @@ export const SketchBoardProvider = ({ children }) => {
 
     canvas.current.getContext('2d').scale(dpr, dpr);
 
+    const unsubGuess = subscribe("sketch", (data) => {
+
+      if (data.payload.sketching) {
+        // sketching
+        svgPath.current.setAttribute("fill", data.payload.color)
+        svgPath.current?.setAttribute("d", data.payload.path)
+
+      } else {
+        // end sketch
+        setPaths(prev => [...prev, { path: new Path2D(data.payload.path), color: data.payload.color }])
+      }
+
+    })
+
+    return () => {
+      unsubGuess()
+    }
+
   }, [])
 
+  useEffect(() => {
+    sketch()
+
+    svgPath.current.setAttribute("fill", "")
+    svgPath.current?.setAttribute("d", "")
+
+  }, [paths])
 
 
-  return (
-    <SketchBoardContext.Provider value={{
-      color,
+  return {
+    color,
 
-      canvas,
-      svgPath,
+    canvas,
+    svgPath,
 
-      onChangeColor,
-      onPointerDown,
-      onPointerUp,
-      onPointerMove,
-    }}>
-      {children}
-    </SketchBoardContext.Provider>
-  )
+    onChangeColor,
+    onPointerDown,
+    onPointerUp,
+    onPointerMove,
+  }
+
 }

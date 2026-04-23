@@ -1,18 +1,18 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import './index.css'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import { ProtectedRoutes } from './ProtectedRoutes.tsx'
-import { SessionContext, SessionProvider } from './context/SessionContext.tsx'
+import { SessionProvider } from './context/SessionContext.tsx'
 import { Login } from './Login.tsx'
 import { Home } from './Home.tsx'
-import { WebsocketProvider } from './context/Websockets.tsx'
+import { WebSocketProvider } from './context/WebsSocketsContext.tsx'
+import './index.css'
 
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <SessionProvider>
-      <WebsocketProvider>
+      <WebSocketProvider>
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -23,7 +23,7 @@ createRoot(document.getElementById('root')!).render(
 
           </Routes>
         </BrowserRouter>
-      </WebsocketProvider>
+      </WebSocketProvider>
     </SessionProvider>
   </StrictMode>,
 )

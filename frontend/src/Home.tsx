@@ -1,30 +1,11 @@
-import { useContext, useRef, type SubmitEvent } from "react"
+import { useContext } from "react"
 import { SessionContext } from "./context/SessionContext"
-import { WebsocketContext } from "./context/Websockets";
 import { Chat } from "./components/Chat";
 import { SketchBoard } from "./components/SketchBoard"
-import { SketchBoardProvider } from "./context/SketchBoardContext";
 
 export function Home() {
 
   const { session, onDeleteSession } = useContext(SessionContext)
-  const { messages, onSendMessage } = useContext(WebsocketContext);
-
-  const input = useRef<HTMLInputElement>(null)
-  const onSubmit = (ev: SubmitEvent<HTMLFormElement>) => {
-    ev.preventDefault()
-
-    if (input.current.value.length === 0) return;
-
-    onSendMessage({
-      "type": "guess",
-      "payload": {
-        "message": input.current.value
-      }
-    })
-
-    input.current.value = ""
-  }
 
 
   return (
@@ -35,16 +16,8 @@ export function Home() {
       <button onClick={onDeleteSession}>
         Close session
       </button>
-      <Chat messages={messages} />
-      <form onSubmit={onSubmit}>
-        <input ref={input} maxLength={40} name="guess" type="text" placeholder="Type your guess" />
-        <button>
-          send
-        </button>
-      </form>
-      <SketchBoardProvider>
-        <SketchBoard />
-      </SketchBoardProvider>
+      <Chat />
+      <SketchBoard />
     </div >
   )
 }
