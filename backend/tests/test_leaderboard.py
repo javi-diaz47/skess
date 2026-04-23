@@ -33,3 +33,20 @@ def test_update_score_unknown_user():
     board = lb.updateScore("b", 5)
 
     assert board == [("a", 0)]
+
+
+def test_add_user_appends_with_zero_score():
+    lb = Leaderboard(["a"])
+
+    lb.add_user("b")
+
+    assert lb.get_leaderboard() == [("a", 0), ("b", 0)]
+
+
+def test_add_user_does_not_duplicate():
+    lb = Leaderboard(["a"])
+
+    lb.updateScore("a", 10)
+    lb.add_user("a")
+
+    assert lb.get_leaderboard() == [("a", 10)]
