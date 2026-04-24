@@ -1,3 +1,4 @@
+from typing import Dict
 from fastapi import WebSocket
 
 
@@ -5,6 +6,7 @@ class User:
     id: str
     name: str
     color: str
+    score: int
 
     def __init__(self, id: str, name: str, color: str):
         self.id = id
@@ -23,7 +25,7 @@ class Connection:
 
 class ConnectionManager:
     def __init__(self):
-        self.active_conns = {}
+        self.active_conns: Dict[str, Connection] = {}
 
     async def connect(self, conn: Connection):
         if conn.user.id in self.active_conns:
