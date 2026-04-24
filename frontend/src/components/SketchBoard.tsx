@@ -30,7 +30,7 @@ export function SketchBoard() {
           </g>
         </svg>
       </div>
-      <div className="flex gap-1 p-2 bg-background-100 dark:bg-background-800 rounded-lg w-fit">
+      <div className="flex gap-2 mt-2 p-2 bg-background-100 dark:bg-background-800 rounded-lg w-fit">
         {Object.entries(SKETCH_COLORS).map(([name, value]) => {
           const c = value.base;
 
@@ -38,7 +38,7 @@ export function SketchBoard() {
             <button
               key={name}
               onClick={() => onChangeColor(c)}
-              className={`w-4 h-4 rounded-full ${color === c ? 'ring-2 ring-accent-200' : ''}`}
+              className={`w-6 h-6 rounded-full ${color === c ? 'ring-2 ring-accent-200' : ''}`}
               style={{ backgroundColor: c }}
               title={name}
             />
