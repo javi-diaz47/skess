@@ -21,5 +21,15 @@ class Leaderboard:
                 return
         self.lb.append((id, 0))
 
+    def remove_user(self, id: str):
+        index = -1
+        for i in range(len(self.lb)):
+            if self.lb[i][0] == id:
+                index = i
+                break
+
+        if index != -1:
+            self.lb.pop(index)
+
     def get_leaderboard(self) -> List[Tuple[str, int]]:
         return self.lb
