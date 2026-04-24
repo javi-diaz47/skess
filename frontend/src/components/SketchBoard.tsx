@@ -14,7 +14,7 @@ export function SketchBoard() {
   } = useSketch()
 
   return (
-    <>
+    <div>
       <div className="relative">
         <canvas
           ref={canvas}
@@ -45,6 +45,6 @@ export function SketchBoard() {
           );
         })}
       </div>
-    </>
+    </div>
   )
 }

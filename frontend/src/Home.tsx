@@ -17,10 +17,14 @@ export function Home() {
       <button onClick={onDeleteSession}>
         Close session
       </button>
-      <Chat />
-      <WordSelector />
-      <SketchBoard />
-      <Leaderboard />
+      <main className="flex gap-8 p-8 relative">
+        <SketchBoard />
+        <Chat />
+        <div className="absolute left-8 top-1/2 -translate-y-1/2 bg-accent-300">
+          <WordSelector />
+        </div>
+        <Leaderboard />
+      </main>
     </div>
   )
 }
