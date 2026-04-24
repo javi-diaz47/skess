@@ -53,6 +53,6 @@ class ConnectionManager:
     async def send_personal_message(self, conn: Connection, data):
         await conn.ws.send_json(data)
 
-    async def broadcast(self, data):
+    async def broadcast(self, data: Dict):
         for id in self.active_conns:
             await self.active_conns[id].ws.send_json(data)
