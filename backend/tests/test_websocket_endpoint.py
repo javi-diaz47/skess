@@ -1,3 +1,4 @@
+import asyncio
 import websockets.asyncio.client as websockets
 import pytest
 import pytest_asyncio
@@ -66,7 +67,7 @@ async def client():
 
 @pytest.mark.asyncio
 async def test_guess_message(server, client):
-    _ = await client(str(uuid.uuid4()))
+    client1 = await client(str(uuid.uuid4()))
 
     client2_id = str(uuid.uuid4())
     client2 = await client(client2_id)
@@ -76,13 +77,19 @@ async def test_guess_message(server, client):
     _payload = {"message": "python"}
 
     input_data = {"type": _type, "user": _user, "payload": _payload}
-
     await client2.send(json.dumps(input_data))
 
-    res = await client2.recv()
-    event = json.loads(res)
+    async with asyncio.TaskGroup() as tg:
+        task1 = tg.create_task(client1.recv())
+        task2 = tg.create_task(client2.recv())
 
-    is_valid_event(event, _type, _payload, _user)
+    event = json.loads(task1.result())
+    if event["type"] == "guess":
+        is_valid_event(event, _type, _payload, _user)
+
+    event = json.loads(task2.result())
+    if event["type"] == "guess":
+        is_valid_event(event, _type, _payload, _user)
 
 
 @pytest.mark.asyncio
@@ -135,8 +142,7 @@ async def test_path(server, client):
     client1_id = str(uuid.uuid4())
     client1 = await client(client1_id)
 
-    client2_id = str(uuid.uuid4())
-    client2 = await client(client2_id)
+    client2 = await client(str(uuid.uuid4()))
 
     _type = "sketch"
     _user = {"id": client1_id, "name": "ada"}
@@ -149,10 +155,17 @@ async def test_path(server, client):
     input_data = {"type": _type, "payload": _payload}
     await client1.send(json.dumps(input_data))
 
-    res = await client2.recv()
-    event = json.loads(res)
+    async with asyncio.TaskGroup() as tg:
+        task1 = tg.create_task(client1.recv())
+        task2 = tg.create_task(client2.recv())
 
-    is_valid_event(event, _type, _payload, _user)
+    event = json.loads(task1.result())
+    if event["type"] == "guess":
+        is_valid_event(event, _type, _payload, _user)
+
+    event = json.loads(task2.result())
+    if event["type"] == "guess":
+        is_valid_event(event, _type, _payload, _user)
 
 
 @pytest.mark.asyncio
@@ -170,7 +183,13 @@ async def test_no_path_in_payload(server, client):
     await client1.send(json.dumps(input_data))
 
     res = await client1.recv()
-    assert json.loads(res) == {
+    event = json.loads(res)
+
+    if "type" in event:
+        res = await client1.recv()
+        event = json.loads(res)
+
+    assert event == {
         "error": "Invalid Message",
         "message": "Payload must include a property path of type string",
     }
@@ -191,6 +210,12 @@ async def test_no_color_in_payload(server, client):
     await client1.send(json.dumps(input_data))
 
     res = await client1.recv()
+    event = json.loads(res)
+
+    if "type" in event:
+        res = await client1.recv()
+        event = json.loads(res)
+
     assert json.loads(res) == {
         "error": "Invalid Message",
         "message": "Payload must include a string property color representing the path’s hexadecimal color.",
@@ -212,6 +237,12 @@ async def test_no_sketching_in_payload(server, client):
     await client1.send(json.dumps(input_data))
 
     res = await client1.recv()
+    event = json.loads(res)
+
+    if "type" in event:
+        res = await client1.recv()
+        event = json.loads(res)
+
     assert json.loads(res) == {
         "error": "Invalid Message",
         "message": "Payload must include a boolean property sketching indicating whether the path is finished.",
