@@ -26,6 +26,21 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
 
     if conn.user.id not in game.users:
         game.add_user(conn.user.id)
+        lb = game.get_leaderboard()
+        leaderboard = []
+        for id, score in lb:
+            manager.active_conns[id].user.score = score
+            if id in manager.active_conns:
+                leaderboard.append(manager.active_conns[id].user.__dict__)
+
+        event_id = str(uuid4())
+        await manager.broadcast(
+            {
+                "event_id": event_id,
+                "type": "leaderboard",
+                "payload": {"leaderboard": leaderboard},
+            }
+        )
 
     if len(manager.active_conns) == 2:
         sketcher_id, words = game.start()

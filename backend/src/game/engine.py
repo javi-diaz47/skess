@@ -53,3 +53,6 @@ class Game:
 
     def get_guessed(self) -> List[str]:
         return list(self.guessed)
+
+    def get_leaderboard(self):
+        return self.lb.get_leaderboard()
