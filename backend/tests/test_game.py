@@ -7,7 +7,6 @@ def test_game_initialization():
     game = Game(users)
 
     assert game.users == users
-    assert game.N == 2
     assert game.word == ""
     assert game.sketcher_index == -1
 
@@ -86,7 +85,7 @@ def test_add_user_updates_N():
 
     game.add_user("b")
 
-    assert game.N == 2
+    assert len(game.users) == 2
 
 
 def test_add_user_affects_sketcher_rotation():
@@ -130,3 +129,13 @@ def test_state_transitions_full_flow():
 
     game.end()
     assert game.get_state() == "end"
+
+
+def test_remove_user():
+    user_id = "a"
+
+    game = Game(["a", "b"])
+
+    game.remove_user(user_id)
+
+    assert user_id not in game.users

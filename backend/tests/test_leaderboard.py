@@ -50,3 +50,11 @@ def test_add_user_does_not_duplicate():
     lb.add_user("a")
 
     assert lb.get_leaderboard() == [("a", 10)]
+
+
+def test_remove_user():
+    lb = Leaderboard(["a", "b"])
+
+    lb.remove_user("a")
+
+    assert ("a", 0) not in lb.get_leaderboard()
