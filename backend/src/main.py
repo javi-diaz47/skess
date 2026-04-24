@@ -65,7 +65,7 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
                 guessed = len(game.get_guessed())
                 total = len(game.users)
 
-                type_status = "leaderboard"
+                type_status = "guess"
 
                 if guessed == total - 1:
                     lb = game.end()
@@ -82,6 +82,8 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
                         }
                     )
                     continue
+
+                type_status = "leaderboard"
 
                 leaderboard = []
                 for id, score in lb:

@@ -24,6 +24,15 @@ export type CreateSketchSocketEvent = CreateSocketEvent<SketchSocketEvent>
 export type ChooseSocketEvent = BaseSocketEvent<"choose_options", { words: string[] }>
 export type CreateChooseSelectionSocketEvent = CreateSocketEvent<BaseSocketEvent<"choose_selection", { word: string }>>
 
+export interface UserAPI {
+  id: string,
+  name: string,
+  color: string,
+  score: number,
+}
+
+export type LeaderboardSocketEvent = BaseSocketEvent<"leaderboard", { leaderboard: UserAPI[] }>
+
 
 export interface WebsocketSession {
   messages: GuessSocketEvent[]
@@ -36,6 +45,7 @@ export type SocketEvents = {
   guess: GuessSocketEvent,
   choose_options: ChooseSocketEvent,
   sketch: SketchSocketEvent,
+  leaderboard: LeaderboardSocketEvent,
   close: CloseEvent
 }
 

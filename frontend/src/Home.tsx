@@ -2,7 +2,8 @@ import { useContext, useEffect, useState } from "react"
 import { SessionContext } from "./context/SessionContext"
 import { Chat } from "./components/Chat";
 import { SketchBoard } from "./components/SketchBoard"
-import { WebSocketContext } from "./context/WebsSocketsContext";
+import { WebSocketContext, type UserAPI } from "./context/WebsSocketsContext";
+import { CHAT_COLORS } from "./contants/chatColors";
 
 export function Home() {
 
@@ -32,6 +33,17 @@ export function Home() {
 
   }, [])
 
+  const [leaderboard, setLeaderboard] = useState<UserAPI[]>([])
+  useEffect(() => {
+    const unsubLeaderboard = subscribe("leaderboard", (ev) => {
+      setLeaderboard(ev.payload.leaderboard)
+    })
+
+    return () => {
+      unsubLeaderboard()
+    }
+
+  }, [])
 
   return (
     <div>
@@ -59,6 +71,21 @@ export function Home() {
         )
       }
       <SketchBoard />
+      <ul>
+        {
+          leaderboard && leaderboard.map(user => (
+            <li>
+              <span className={`mr-2 font-bold ${CHAT_COLORS[user.color]}`}>
+
+                {user.name}
+              </span>
+              <span>
+                {user.score}
+              </span>
+            </li>
+          ))
+        }
+      </ul>
     </div>
   )
 }
