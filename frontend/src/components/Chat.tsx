@@ -25,7 +25,7 @@ export function Chat() {
 
   return (
     <div>
-
+      <h2 className="text-2xl font-bold">Chat</h2>
       <ul className="h-72 w-72 bg-background-100 dark:bg-background-900 overflow-y-scroll p-2">
         {
           messages && messages.map(item => (

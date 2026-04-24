@@ -20,6 +20,7 @@ export function Leaderboard() {
 
   return (
     <ul>
+      <h2 className="text-2xl font-bold">Leaderboard</h2>
       {
         leaderboard && leaderboard.map(user => (
           <li>

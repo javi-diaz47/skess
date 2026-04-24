@@ -15,6 +15,7 @@ export function SketchBoard() {
 
   return (
     <div>
+      <h2 className="text-2xl font-bold">Sketch board</h2>
       <div className="relative">
         <canvas
           ref={canvas}
