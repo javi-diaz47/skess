@@ -24,6 +24,9 @@ export type CreateSketchSocketEvent = CreateSocketEvent<SketchSocketEvent>
 export type ChooseSocketEvent = BaseSocketEvent<"choose_options", { words: string[] }>
 export type CreateChooseSelectionSocketEvent = CreateSocketEvent<BaseSocketEvent<"choose_selection", { word: string }>>
 
+export type StatusSocketEvent = BaseSocketEvent<"status", { status: "start" | "end" }>
+export type CreateStartSocketEvent = CreateSocketEvent<BaseSocketEvent<"status", { status: "start" }>>
+
 export interface UserAPI {
   id: string,
   name: string,
@@ -46,7 +49,8 @@ export type SocketEvents = {
   choose_options: ChooseSocketEvent,
   sketch: SketchSocketEvent,
   leaderboard: LeaderboardSocketEvent,
-  close: CloseEvent
+  status: StatusSocketEvent
+  close: CloseEvent,
 }
 
 
@@ -56,7 +60,7 @@ export type WebSocketContextValue = {
     fn: (ev: SocketEvents[K]) => void
   ) => () => void
 
-  send: (ev: CreateGuessSocketEvent | CreateSketchSocketEvent | CreateChooseSelectionSocketEvent) => void
+  send: (ev: CreateGuessSocketEvent | CreateSketchSocketEvent | CreateChooseSelectionSocketEvent | CreateStartSocketEvent) => void
 
 }
 

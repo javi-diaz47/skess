@@ -1,9 +1,10 @@
-import { useContext, useEffect, useState } from "react"
+import { useContext } from "react"
 import { SessionContext } from "./context/SessionContext"
 import { Chat } from "./components/Chat";
 import { SketchBoard } from "./components/SketchBoard"
 import { Leaderboard } from "./components/Leaderboard";
 import { WordSelector } from "./components/WordSelector";
+import { PlayButton } from "./components/PlayButtton";
 
 export function Home() {
 
@@ -25,6 +26,7 @@ export function Home() {
         </div>
         <Leaderboard />
       </main>
+      <PlayButton />
     </div>
   )
 }
