@@ -85,6 +85,7 @@ export const useSketch = () => {
 
   const sketch = () => {
     const ctx = canvas.current.getContext('2d')
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
 
     paths.forEach(cur => {
       ctx.beginPath()
@@ -122,8 +123,15 @@ export const useSketch = () => {
 
     })
 
+    const unsubStatus = subscribe("status", (ev) => {
+      if (ev.payload.status === "start") {
+        setPaths([])
+      }
+    })
+
     return () => {
       unsubGuess()
+      unsubStatus()
     }
 
   }, [])

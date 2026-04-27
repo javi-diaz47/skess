@@ -39,9 +39,16 @@ export const useChat = () => {
       setMessages(prev => [...prev, message])
     })
 
+    const unsubStatus = subscribe("status", (ev) => {
+      if (ev.payload.status === "start") {
+        setMessages([])
+      }
+    })
+
     return () => {
       unsubMessage()
       unsubClose()
+      unsubStatus()
     }
 
   }, [])
