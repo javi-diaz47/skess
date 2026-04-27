@@ -15,7 +15,7 @@ type BaseSocketEvent<T, U> = {
 
 type CreateSocketEvent<SocketEvent> = Omit<SocketEvent, "event_id" | "user">
 
-export type GuessSocketEvent = BaseSocketEvent<"guess", { message: string }>
+export type GuessSocketEvent = BaseSocketEvent<"guess", { message: string, correct: boolean }>
 export type CreateGuessSocketEvent = CreateSocketEvent<GuessSocketEvent>
 
 export type SketchSocketEvent = BaseSocketEvent<"sketch", { path: string, color: string, sketching: boolean }>

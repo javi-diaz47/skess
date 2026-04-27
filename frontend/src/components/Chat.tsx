@@ -29,14 +29,25 @@ export function Chat() {
       <ul className="h-72 w-72 bg-background-100 dark:bg-background-900 overflow-y-scroll p-2">
         {
           messages && messages.map(item => (
-            <li key={item.event_id}>
-              <p className="break-all">
-                <span className={`mr-2 font-bold ${CHAT_COLORS[item.user.color]}`}>
-                  {item.user.id === session.id ? 'You' : item.user.name}:
-                </span>
-                {item.payload.message}
-              </p>
-            </li>
+            item.payload.correct ? (
+              <li className="bg-green-950">
+                <p className="break-all">
+                  <span className={`mr-2 font-bold ${CHAT_COLORS[item.user.color]}`}>
+                    {item.user.name}:
+                  </span>
+                  guessed correctly
+                </p>
+              </li>
+            ) : (
+              <li key={item.event_id} className={`${item.payload.correct === true ? "bg-green-700" : ""}`}>
+                <p className="break-all">
+                  <span className={`mr-2 font-bold ${CHAT_COLORS[item.user.color]}`}>
+                    {item.user.id === session.id ? 'You' : item.user.name}:
+                  </span>
+                  {item.payload.message}
+                </p>
+              </li>
+            )
           ))
         }
       </ul>

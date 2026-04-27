@@ -13,7 +13,8 @@ export const useChat = () => {
     send({
       "type": "guess",
       "payload": {
-        "message": message
+        "message": message,
+        "correct": false
       }
     })
   }
@@ -32,7 +33,8 @@ export const useChat = () => {
         user: session,
         type: "guess",
         payload: {
-          message: ev.reason
+          message: ev.reason,
+          correct: false
         }
       }
 
