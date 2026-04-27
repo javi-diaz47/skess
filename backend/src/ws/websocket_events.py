@@ -14,13 +14,14 @@ class BaseSocketEvent(BaseModel):
     user: UserWebSocket | None = None
 
 
-class GuessPayload(BaseModel):
+class PayloadGuess(BaseModel):
     message: str
+    correct: bool | None
 
 
 class GuessEvent(BaseSocketEvent):
     type: Literal["guess"]
-    payload: GuessPayload
+    payload: PayloadGuess
 
 
 class SketchPayload(BaseModel):

@@ -14,6 +14,7 @@ from src.ws.websocket_events import (
     PayloadChooseOptions,
     PayloadLeaderboard,
     PayloadStatusEvent,
+    PayloadGuess,
     SketchEvent,
     SocketEvent,
     StatusEvent,
@@ -93,6 +94,7 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
 
             ev = SocketEvent(event=data).event
 
+            print("HEEEEEEEEEEEEEEERE", ev)
             match ev:
                 case StatusEvent():
                     if ev.payload.status == "end":
@@ -144,6 +146,17 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
                     # All users guessed (except the sketcher) END GAME
                     guessed = len(game.get_guessed())
                     total = len(game.users)
+
+                    # broadcast that user.id guessed correctly
+                    correct_guess_ev = GuessEvent(
+                        event_id=str(uuid4()),
+                        user=UserWebSocket(**conn.user.__dict__),
+                        type="guess",
+                        payload=PayloadGuess(
+                            message=f"{conn.user.name} guessed the word", correct=True
+                        ),
+                    )
+                    await manager.broadcast(correct_guess_ev.model_dump())
 
                     if guessed == total - 1:
                         game.end()
