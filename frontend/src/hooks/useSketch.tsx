@@ -53,6 +53,7 @@ export const useSketch = () => {
     })
 
     points.current = []
+    lastPath.current = ""
 
     svgPath.current.setAttribute("fill", "")
     svgPath.current?.setAttribute("d", "")
