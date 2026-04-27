@@ -1,5 +1,4 @@
-from os import wait
-from typing import List, Literal
+from typing import List, Literal, Union
 from pydantic import BaseModel
 
 
@@ -61,7 +60,7 @@ class LeaderboardEvent(BaseSocketEvent):
     type: Literal["leaderboard"]
     payload: PayloadLeaderboard
 
-:wait(:wait())
+
 class StartEvent(BaseSocketEvent):
     type: Literal["start"]
 
