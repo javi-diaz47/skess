@@ -1,20 +1,22 @@
 from typing import Dict
 from uuid import uuid4
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, status
 from src.game.engine import Game
 from src.utils.colors import COLORS
 from src.ws.connection_manager import Connection, ConnectionManager, User
 from src.ws.validation_message import validate_message, validate_payload
 from src.ws.websocket_events import (
+    ChooseOptionsEvent,
     ChooseSelectionEvent,
     DisconnectEvent,
-    EndEvent,
     GuessEvent,
     LeaderboardEvent,
+    PayloadChooseOptions,
     PayloadLeaderboard,
+    PayloadStatusEvent,
     SketchEvent,
     SocketEvent,
-    StartEvent,
+    StatusEvent,
     UserWebSocket,
 )
 import random
@@ -48,27 +50,32 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
 
     if conn.user.id not in game.users:
         game.add_user(conn.user.id)
-        lb = game.get_leaderboard()
-        leaderboard = []
-        for id, score in lb:
-            manager.active_conns[id].user.score = score
-            if id in manager.active_conns:
-                leaderboard.append(manager.active_conns[id].user.__dict__)
+        positions = game.get_leaderboard()
 
-        event_id = str(uuid4())
-        await manager.broadcast(
-            {
-                "event_id": event_id,
-                "type": "leaderboard",
-                "payload": {"leaderboard": leaderboard},
-            }
+        leaderboard = create_leaderboard(manager.active_conns, game.get_leaderboard())
+
+        lb_event = LeaderboardEvent(
+            event_id=str(uuid4()),
+            type="leaderboard",
+            payload=PayloadLeaderboard(leaderboard=leaderboard),
         )
+        await manager.broadcast(lb_event.model_dump())
 
     if len(manager.active_conns) == 2:
         sketcher_id, words = game.start()
-        await manager.send_message(
-            sketcher_id, {"type": "choose_options", "payload": {"words": words}}
+        ev = ChooseOptionsEvent(
+            event_id=str(uuid4()),
+            type="choose_options",
+            payload=PayloadChooseOptions(words=words),
         )
+        await manager.send_message(sketcher_id, ev.model_dump())
+
+        ev = StatusEvent(
+            event_id=str(uuid4()),
+            type="status",
+            payload=PayloadStatusEvent(status="start"),
+        )
+        await manager.broadcast(ev.model_dump())
 
     try:
         while True:
@@ -87,17 +94,28 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
             ev = SocketEvent(event=data).event
 
             match ev:
-                case StartEvent():
+                case StatusEvent():
+                    if ev.payload.status == "end":
+                        continue
+
                     if len(manager.active_conns) < 2:
                         # send error message not enough players
                         continue
 
-                    game.start()
                     sketcher_id, words = game.start()
-                    await manager.send_message(
-                        sketcher_id,
-                        {"type": "choose_options", "payload": {"words": words}},
+                    choose_ev = ChooseOptionsEvent(
+                        event_id=str(uuid4()),
+                        type="choose_options",
+                        payload=PayloadChooseOptions(words=words),
                     )
+                    await manager.send_message(sketcher_id, choose_ev.model_dump())
+
+                    status_ev = StatusEvent(
+                        event_id=str(uuid4()),
+                        type="status",
+                        payload=PayloadStatusEvent(status="start"),
+                    )
+                    await manager.broadcast(status_ev.model_dump())
 
                 case ChooseSelectionEvent():
                     game.choose(ev.payload.word)
@@ -129,9 +147,10 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
 
                     if guessed == total - 1:
                         game.end()
-                        end_event = EndEvent(
+                        end_event = StatusEvent(
                             event_id=str(uuid4()),
-                            type="end",
+                            type="status",
+                            payload=PayloadStatusEvent(status="end"),
                         )
                         await manager.broadcast(end_event.model_dump())
 

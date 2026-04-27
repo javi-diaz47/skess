@@ -61,12 +61,13 @@ class LeaderboardEvent(BaseSocketEvent):
     payload: PayloadLeaderboard
 
 
-class StartEvent(BaseSocketEvent):
-    type: Literal["start"]
+class PayloadStatusEvent(BaseModel):
+    status: Literal["start", "end"]
 
 
-class EndEvent(BaseSocketEvent):
-    type: Literal["end"]
+class StatusEvent(BaseSocketEvent):
+    type: Literal["status"]
+    payload: PayloadStatusEvent
 
 
 class DisconnectEvent(BaseSocketEvent):
@@ -75,8 +76,7 @@ class DisconnectEvent(BaseSocketEvent):
 
 class SocketEvent(BaseModel):
     event: Union[
-        StartEvent,
-        EndEvent,
+        StatusEvent,
         GuessEvent,
         SketchEvent,
         ChooseOptionsEvent,
