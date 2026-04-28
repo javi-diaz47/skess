@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState } from "react"
 import { WebSocketContext, type GuessSocketEvent } from "../context/WebsSocketsContext"
 import { SessionContext } from "../context/SessionContext"
+import { useTimer } from "./useTimer"
 
 export const useChat = () => {
 
@@ -9,7 +10,11 @@ export const useChat = () => {
 
   const [messages, setMessages] = useState<GuessSocketEvent[]>([])
 
+  const [status, setStatus] = useState("end")
+  const { time, startTimer, cancelTimer } = useTimer()
+
   const sendMessage = (message: string) => {
+    if (status === "guess" && (time === null || time === 0)) return;
     send({
       "type": "guess",
       "payload": {
@@ -45,6 +50,13 @@ export const useChat = () => {
       if (ev.payload.status === "start") {
         setMessages([])
       }
+      if (ev.payload.status === "guess") {
+        startTimer(10)
+      }
+      if (ev.payload.status === "end") {
+        cancelTimer()
+      }
+      setStatus(ev.payload.status)
     })
 
     return () => {
@@ -56,6 +68,7 @@ export const useChat = () => {
   }, [])
 
   return {
+    time,
     messages,
     sendMessage
   }
