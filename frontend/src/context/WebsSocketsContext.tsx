@@ -24,7 +24,7 @@ export type CreateSketchSocketEvent = CreateSocketEvent<SketchSocketEvent>
 export type ChooseSocketEvent = BaseSocketEvent<"choose_options", { words: string[] }>
 export type CreateChooseSelectionSocketEvent = CreateSocketEvent<BaseSocketEvent<"choose_selection", { word: string }>>
 
-export type StatusSocketEvent = BaseSocketEvent<"status", { status: "start" | "end" }>
+export type StatusSocketEvent = BaseSocketEvent<"status", { status: "start" | "guess" | "end" }>
 export type CreateStartSocketEvent = CreateSocketEvent<BaseSocketEvent<"status", { status: "start" }>>
 
 export interface UserAPI {
