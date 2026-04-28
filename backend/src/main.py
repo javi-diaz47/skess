@@ -1,3 +1,4 @@
+import datetime as dt
 from typing import Dict
 from uuid import uuid4
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, status
@@ -49,6 +50,7 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
     conn = Connection(User(client_id, client_name, random.choice(COLORS)), ws)
     await manager.connect(conn)
 
+    start_timestamp = 0
     if conn.user.id not in game.users:
         game.add_user(conn.user.id)
         positions = game.get_leaderboard()
@@ -62,12 +64,14 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
         )
         await manager.broadcast(lb_event.model_dump())
 
+    start_timestamp = dt.datetime.now(tz=dt.UTC).timestamp()
     if len(manager.active_conns) == 2:
         sketcher_id, words = game.start()
         ev = ChooseOptionsEvent(
             event_id=str(uuid4()),
             type="choose_options",
             payload=PayloadChooseOptions(words=words),
+            timestamp=start_timestamp,
         )
         await manager.send_message(sketcher_id, ev.model_dump())
 
@@ -94,7 +98,6 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
 
             ev = SocketEvent(event=data).event
 
-            print("HEEEEEEEEEEEEEEERE", ev)
             match ev:
                 case StatusEvent():
                     if ev.payload.status == "end":
@@ -104,11 +107,14 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
                         # send error message not enough players
                         continue
 
+                    start_timestamp = dt.datetime.now(tz=dt.UTC).timestamp()
+
                     sketcher_id, words = game.start()
                     choose_ev = ChooseOptionsEvent(
                         event_id=str(uuid4()),
                         type="choose_options",
                         payload=PayloadChooseOptions(words=words),
+                        timestamp=start_timestamp,
                     )
                     await manager.send_message(sketcher_id, choose_ev.model_dump())
 
