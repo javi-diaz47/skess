@@ -1,7 +1,8 @@
 import datetime as dt
+import asyncio
 from typing import Dict
 from uuid import uuid4
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, status
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from src.game.engine import Game
 from src.utils.colors import COLORS
 from src.ws.connection_manager import Connection, ConnectionManager, User
@@ -36,6 +37,20 @@ def ping():
 game: Game = Game([])
 
 
+async def game_timelimit(time):
+    await asyncio.sleep(time)
+    game.end()
+    end_event = StatusEvent(
+        event_id=str(uuid4()),
+        type="status",
+        payload=PayloadStatusEvent(status="end"),
+    )
+    await manager.broadcast(end_event.model_dump())
+
+
+task_end_game: None | asyncio.Task = None
+
+
 def create_leaderboard(conns: Dict[str, Connection], positions):
     leaderboard = []
     for id, score in positions:
@@ -47,6 +62,8 @@ def create_leaderboard(conns: Dict[str, Connection], positions):
 
 @app.websocket("/ws/{client_id}/{client_name}")
 async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
+    global task_end_game
+
     conn = Connection(User(client_id, client_name, random.choice(COLORS)), ws)
     await manager.connect(conn)
 
@@ -71,7 +88,6 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
             event_id=str(uuid4()),
             type="choose_options",
             payload=PayloadChooseOptions(words=words),
-            timestamp=start_timestamp,
         )
         await manager.send_message(sketcher_id, ev.model_dump())
 
@@ -107,14 +123,11 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
                         # send error message not enough players
                         continue
 
-                    start_timestamp = dt.datetime.now(tz=dt.UTC).timestamp()
-
                     sketcher_id, words = game.start()
                     choose_ev = ChooseOptionsEvent(
                         event_id=str(uuid4()),
                         type="choose_options",
                         payload=PayloadChooseOptions(words=words),
-                        timestamp=start_timestamp,
                     )
                     await manager.send_message(sketcher_id, choose_ev.model_dump())
 
@@ -127,7 +140,16 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
 
                 case ChooseSelectionEvent():
                     game.choose(ev.payload.word)
+                    status_ev = StatusEvent(
+                        event_id=str(uuid4()),
+                        type="status",
+                        payload=PayloadStatusEvent(status="guess"),
+                    )
+                    await manager.broadcast(status_ev.model_dump())
+
+                    task_end_game = asyncio.create_task(game_timelimit(10))
                     print(f"{ev.payload.word} was chosen")
+                    task_end_game.add_done_callback(lambda x: print("all done!"))
 
                 case GuessEvent():
                     positions = game.guess(conn.user.id, ev.payload.message)
@@ -171,6 +193,8 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
                             type="status",
                             payload=PayloadStatusEvent(status="end"),
                         )
+                        if task_end_game is not None:
+                            task_end_game.cancel()
                         await manager.broadcast(end_event.model_dump())
 
                 case SketchEvent():

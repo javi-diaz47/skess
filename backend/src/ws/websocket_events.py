@@ -64,7 +64,7 @@ class LeaderboardEvent(BaseSocketEvent):
 
 
 class PayloadStatusEvent(BaseModel):
-    status: Literal["start", "end"]
+    status: Literal["start", "guess", "end"]
 
 
 class StatusEvent(BaseSocketEvent):
