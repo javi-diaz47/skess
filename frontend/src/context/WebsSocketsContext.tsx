@@ -11,9 +11,11 @@ type BaseSocketEvent<T, U> = {
   type: T
   payload: U
   user: UserSession
+  timestamp: number | null
+  game_guess_limit: number | null
 }
 
-type CreateSocketEvent<SocketEvent> = Omit<SocketEvent, "event_id" | "user">
+type CreateSocketEvent<SocketEvent> = Omit<SocketEvent, "event_id" | "user" | "timestamp" | "game_guess_limit">
 
 export type GuessSocketEvent = BaseSocketEvent<"guess", { message: string, correct: boolean }>
 export type CreateGuessSocketEvent = CreateSocketEvent<GuessSocketEvent>
