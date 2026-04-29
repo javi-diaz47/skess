@@ -1,4 +1,3 @@
-import datetime as dt
 import asyncio
 from typing import Dict
 from uuid import uuid4
@@ -33,6 +32,9 @@ manager = ConnectionManager()
 def ping():
     return "pong!"
 
+
+GAME_CHOOSE_TIME_LIMIT = 10
+GAME_GUESS_TIME_LIMIT = 35
 
 game: Game = Game([])
 
@@ -80,7 +82,17 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
         )
         await manager.broadcast(lb_event.model_dump())
 
-    if len(manager.active_conns) == 2:
+        if game.game_state.state == "guess":
+            status_ev = StatusEvent(
+                event_id=str(uuid4()),
+                type="status",
+                payload=PayloadStatusEvent(status="guess"),
+                timestamp=game.get_timestamp(),
+                game_guess_limit=game.get_time_limits().guess,
+            )
+            await manager.send_personal_message(conn, status_ev.model_dump())
+
+    if len(manager.active_conns) == 2 and game.is_idle():
         _game = game.start()
         print(_game)
         if _game is not None:
@@ -149,10 +161,14 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
                         event_id=str(uuid4()),
                         type="status",
                         payload=PayloadStatusEvent(status="guess"),
+                        timestamp=game.get_timestamp(),
+                        game_guess_limit=game.get_time_limits().guess,
                     )
                     await manager.broadcast(status_ev.model_dump())
 
-                    task_end_game = asyncio.create_task(game_timelimit(10))
+                    task_end_game = asyncio.create_task(
+                        game_timelimit(GAME_GUESS_TIME_LIMIT)
+                    )
                     print(f"{ev.payload.word} was chosen")
                     task_end_game.add_done_callback(lambda x: print("all done!"))
 

@@ -107,3 +107,13 @@ class Game:
 
     def get_leaderboard(self):
         return self.lb.get_leaderboard()
+
+    def get_timestamp(self) -> float | None:
+        if isinstance(self.game_state, ActiveState):
+            return dt.datetime.timestamp(self.game_state.timestamp)
+
+    def get_time_limits(self) -> GameTimeLimit:
+        return self.time_limits
+
+    def is_idle(self) -> bool:
+        return isinstance(self.game_state, IdleState)
