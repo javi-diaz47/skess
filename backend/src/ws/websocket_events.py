@@ -12,7 +12,9 @@ class UserWebSocket(BaseModel):
 class BaseSocketEvent(BaseModel):
     event_id: str | None = None
     user: UserWebSocket | None = None
-    timestamps: float | None = None
+    timestamp: float | None = None
+    game_guess_limit: int | None = None
+    game_choose_limit: int | None = None
 
 
 class PayloadGuess(BaseModel):
