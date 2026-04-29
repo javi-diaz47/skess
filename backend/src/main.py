@@ -67,7 +67,6 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
     conn = Connection(User(client_id, client_name, random.choice(COLORS)), ws)
     await manager.connect(conn)
 
-    start_timestamp = 0
     if conn.user.id not in game.users:
         game.add_user(conn.user.id)
         positions = game.get_leaderboard()
@@ -81,22 +80,24 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
         )
         await manager.broadcast(lb_event.model_dump())
 
-    start_timestamp = dt.datetime.now(tz=dt.UTC).timestamp()
     if len(manager.active_conns) == 2:
-        sketcher_id, words = game.start()
-        ev = ChooseOptionsEvent(
-            event_id=str(uuid4()),
-            type="choose_options",
-            payload=PayloadChooseOptions(words=words),
-        )
-        await manager.send_message(sketcher_id, ev.model_dump())
+        _game = game.start()
+        print(_game)
+        if _game is not None:
+            sketcher_id, words = _game
+            ev = ChooseOptionsEvent(
+                event_id=str(uuid4()),
+                type="choose_options",
+                payload=PayloadChooseOptions(words=words),
+            )
+            await manager.send_message(sketcher_id, ev.model_dump())
 
-        ev = StatusEvent(
-            event_id=str(uuid4()),
-            type="status",
-            payload=PayloadStatusEvent(status="start"),
-        )
-        await manager.broadcast(ev.model_dump())
+            ev = StatusEvent(
+                event_id=str(uuid4()),
+                type="status",
+                payload=PayloadStatusEvent(status="start"),
+            )
+            await manager.broadcast(ev.model_dump())
 
     try:
         while True:
@@ -123,7 +124,11 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
                         # send error message not enough players
                         continue
 
-                    sketcher_id, words = game.start()
+                    _game = game.start()
+                    if _game is None:
+                        continue
+
+                    sketcher_id, words = _game
                     choose_ev = ChooseOptionsEvent(
                         event_id=str(uuid4()),
                         type="choose_options",
