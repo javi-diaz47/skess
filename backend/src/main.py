@@ -2,7 +2,7 @@ import asyncio
 from typing import Dict
 from uuid import uuid4
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from src.game.engine import Game
+from src.game.engine import Game, Phase
 from src.utils.colors import COLORS
 from src.ws.connection_manager import Connection, ConnectionManager, User
 from src.ws.validation_message import validate_message, validate_payload
@@ -48,6 +48,7 @@ async def game_timelimit(time):
         payload=PayloadStatusEvent(status="end"),
     )
     await manager.broadcast(end_event.model_dump())
+    print("all done")
 
 
 task_end_game: None | asyncio.Task = None
@@ -69,7 +70,7 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
     conn = Connection(User(client_id, client_name, random.choice(COLORS)), ws)
     await manager.connect(conn)
 
-    if conn.user.id not in game.users:
+    if conn.user.id not in game.get_users():
         game.add_user(conn.user.id)
         positions = game.get_leaderboard()
 
@@ -82,7 +83,7 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
         )
         await manager.broadcast(lb_event.model_dump())
 
-        if game.game_state.state == "guess":
+        if game.get_state() == Phase.GUESS:
             status_ev = StatusEvent(
                 event_id=str(uuid4()),
                 type="status",
@@ -170,7 +171,6 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
                         game_timelimit(GAME_GUESS_TIME_LIMIT)
                     )
                     print(f"{ev.payload.word} was chosen")
-                    task_end_game.add_done_callback(lambda x: print("all done!"))
 
                 case GuessEvent():
                     positions = game.guess(conn.user.id, ev.payload.message)
@@ -194,7 +194,7 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
 
                     # All users guessed (except the sketcher) END GAME
                     guessed = len(game.get_guessed())
-                    total = len(game.users)
+                    total = len(game.get_users())
 
                     # broadcast that user.id guessed correctly
                     correct_guess_ev = GuessEvent(
@@ -208,7 +208,20 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
                     await manager.broadcast(correct_guess_ev.model_dump())
 
                     if guessed == total - 1:
-                        game.end()
+                        positions = game.end()
+
+                        # send leaderboard with sketcher score
+                        leaderboard = create_leaderboard(
+                            manager.active_conns, positions
+                        )
+
+                        lb_event = LeaderboardEvent(
+                            event_id=str(uuid4()),
+                            type="leaderboard",
+                            payload=PayloadLeaderboard(leaderboard=leaderboard),
+                        )
+                        await manager.broadcast(lb_event.model_dump())
+
                         end_event = StatusEvent(
                             event_id=str(uuid4()),
                             type="status",
