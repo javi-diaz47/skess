@@ -1,35 +1,26 @@
-from typing import List, Tuple
+from typing import Dict, List, Tuple
+
+type LeaderboardScores = List[Tuple[str, int]]
 
 
 class Leaderboard:
-    def __init__(self, users_ids: List[str]) -> None:
-        self.lb: List[Tuple[str, int]] = [(id, 0) for id in users_ids]
+    def __init__(self, users_id: List[str]) -> None:
+        self._scores: Dict[str, int] = {user_id: 0 for user_id in users_id}
 
-    def updateScore(self, id: str, score: int) -> List[Tuple[str, int]]:
-        for i in range(len(self.lb)):
-            cur_id, cur_score = self.lb[i]
-            if cur_id == id:
-                self.lb[i] = (id, cur_score + score)
-                self.lb.sort(key=lambda x: x[1], reverse=True)
-                break
+    def update_score(self, user_id: str, score: int) -> LeaderboardScores:
+        if user_id in self._scores:
+            self._scores[user_id] += score
 
-        return self.lb
+        return self.get_leaderboard()
 
-    def add_user(self, id: str):
-        for lb_id, _ in self.lb:
-            if lb_id == id:
-                return
-        self.lb.append((id, 0))
+    def add_user(self, user_id: str) -> None:
+        if user_id not in self._scores:
+            self._scores[user_id] = 0
 
-    def remove_user(self, id: str):
-        index = -1
-        for i in range(len(self.lb)):
-            if self.lb[i][0] == id:
-                index = i
-                break
+    def remove_user(self, user_id: str) -> None:
+        self._scores.pop(user_id)
 
-        if index != -1:
-            self.lb.pop(index)
-
-    def get_leaderboard(self) -> List[Tuple[str, int]]:
-        return self.lb
+    def get_leaderboard(self) -> LeaderboardScores:
+        return sorted(
+            list(self._scores.items()), key=lambda user: user[1], reverse=True
+        )

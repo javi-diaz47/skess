@@ -1,10 +1,12 @@
 from dataclasses import dataclass
-from typing import List, Literal, Tuple, Union
+from enum import StrEnum
+from typing import List, Literal, Set, Tuple, Union
 from pydantic import BaseModel
 from src.game.contants import MAX_SCORE, WORDS
-from src.game.leaderboard import Leaderboard
+from src.game.leaderboard import Leaderboard, LeaderboardScores
 import datetime as dt
 import random
+import math
 
 
 @dataclass
@@ -13,107 +15,158 @@ class GameTimeLimit:
     guess: int = 35
 
 
+class Phase(StrEnum):
+    START = "start"
+    CHOOSE = "choose"
+    GUESS = "guess"
+    END = "end"
+
+
 class IdleState(BaseModel):
-    state: Literal["start", "end"]
+    state: Literal[Phase.START, Phase.END]
+    timestamp: None
 
 
 class ActiveState(BaseModel):
-    state: Literal["choose", "guess"]
+    state: Literal[Phase.CHOOSE, Phase.GUESS]
     timestamp: dt.datetime
 
 
-GameState = Union[IdleState, ActiveState]
+type GameState = Union[IdleState, ActiveState]
 
 
 class Game:
     def __init__(
         self, users: List[str], time_limits: GameTimeLimit = GameTimeLimit()
     ) -> None:
-        self.users = users
-        self.word = ""
+        self._users: List[str] = users
 
-        self.game_state: GameState = IdleState(state="start")
-        self.lb = Leaderboard(users)
-        self.guessed = set()
+        self._words: List[str] = []
+        self._word: str = ""
 
-        self.sketcher_index = -1
-        self.time_limits = time_limits
+        self._phase: GameState = IdleState(state=Phase.START, timestamp=None)
+        self._leaderboard: Leaderboard = Leaderboard(users)
+        self._guessed: Set[str] = set()
 
-        self.words: List[str] = []
+        self._sketcher_index: int = -1
+        self._sketcher_id: str = ""
+        self._time_limits: GameTimeLimit = time_limits
+
+    def _now(self) -> dt.datetime:
+        return dt.datetime.now(tz=dt.UTC)
+
+    def _set_choose_phase(self) -> None:
+        self._phase = ActiveState(state=Phase.CHOOSE, timestamp=self._now())
+
+    def _set_guess_phase(self) -> None:
+        self._phase = ActiveState(state=Phase.GUESS, timestamp=self._now())
+
+    def _set_end_phase(self) -> None:
+        self._phase = IdleState(state=Phase.END, timestamp=None)
+
+    def _reset_round(self) -> None:
+        self._word = ""
+        self._words = []
+        self._sketcher_id = ""
+        self._guessed = set()
 
     def start(self) -> Tuple[str, List[str]] | None:
-        if isinstance(self.game_state, ActiveState):
-            return
+        if isinstance(self._phase, ActiveState):
+            return None
 
-        N = len(self.users)
+        N = len(self._users)
 
-        if self.sketcher_index == -1:
-            self.sketcher_index = random.randint(0, N - 1)
+        if self._sketcher_index == -1:
+            self._sketcher_index = random.randint(0, N - 1)
         else:
-            self.sketcher_index = (self.sketcher_index + 1) % N
+            self._sketcher_index = (self._sketcher_index + 1) % N
 
-        self.game_state = ActiveState(
-            state="choose", timestamp=dt.datetime.now(tz=dt.UTC)
-        )
+        self._reset_round()
+        self._set_choose_phase()
 
-        self.guessed = set()
-        self.words = random.choices(WORDS, k=3)
+        self._words = random.choices(WORDS, k=3)
 
-        return (self.users[self.sketcher_index], self.words)
+        self._sketcher_id = self._users[self._sketcher_index]
 
-    def choose(self, word: str):
-        if self.game_state.state != "choose" or word not in self.words:
-            return
+        return (self._sketcher_id, self._words.copy())
 
-        self.word = word
-        self.words = []
-        self.game_state = ActiveState(
-            state="guess", timestamp=dt.datetime.now(tz=dt.UTC)
-        )
+    def choose(self, word: str) -> bool:
+        if self._phase.state != Phase.CHOOSE or word not in self._words:
+            return False
 
-    def guess(self, id: str, guess: str):
-        if self.game_state.state != "guess":
-            return
+        self._word = word
+        self._words = []
+        self._set_guess_phase()
+        return True
+
+    def guess(self, user_id: str, guess: str) -> LeaderboardScores | None:
+        if self._phase.state != Phase.GUESS:
+            return None
 
         now = dt.datetime.now(tz=dt.UTC)
-        diff = (now - self.game_state.timestamp).seconds
+        diff = (now - self._phase.timestamp).seconds
 
-        if diff > self.time_limits.guess:
-            return
+        if diff > self._time_limits.guess:
+            return None
 
-        if guess == self.word and id not in self.guessed:
-            self.guessed.add(id)
-            return self.lb.updateScore(id, MAX_SCORE)
+        if (
+            guess == self._word
+            and user_id not in self._guessed
+            and user_id != self._sketcher_id
+        ):
+            self._guessed.add(user_id)
+            return self._leaderboard.update_score(user_id, MAX_SCORE)
 
-    def end(self):
-        self.word = ""
-        self.words = []
-        self.game_state = IdleState(state="end")
-        return self.lb.get_leaderboard()
+        return None
 
-    def add_user(self, id):
-        self.users.append(id)
-        self.lb.add_user(id)
+    def _add_sketcher_score(self) -> None:
+        if self._sketcher_id not in self._users:
+            return None
 
-    def remove_user(self, id):
-        self.users.remove(id)
-        self.lb.remove_user(id)
+        guessed_count = len(self._guessed)
+        total_guessed_users = len(self._users) - 1
+
+        score = min(
+            math.floor(MAX_SCORE / total_guessed_users * guessed_count), MAX_SCORE
+        )
+
+        self._leaderboard.update_score(self._sketcher_id, score)
+
+    def end(self) -> LeaderboardScores:
+        self._add_sketcher_score()
+        self._reset_round()
+        self._set_end_phase()
+        return self._leaderboard.get_leaderboard()
+
+    def add_user(self, user_id) -> None:
+        self._users.append(user_id)
+        self._leaderboard.add_user(user_id)
+
+    def remove_user(self, id) -> None:
+        self._users.remove(id)
+        self._leaderboard.remove_user(id)
+
+    def get_phase(self) -> GameState:
+        return self._phase.model_copy()
 
     def get_state(self) -> str:
-        return self.game_state.state
+        return str(self._phase.state)
 
     def get_guessed(self) -> List[str]:
-        return list(self.guessed)
+        return list(self._guessed)
 
-    def get_leaderboard(self):
-        return self.lb.get_leaderboard()
+    def get_users(self) -> List[str]:
+        return list(self._users)
+
+    def get_leaderboard(self) -> LeaderboardScores:
+        return self._leaderboard.get_leaderboard()
 
     def get_timestamp(self) -> float | None:
-        if isinstance(self.game_state, ActiveState):
-            return dt.datetime.timestamp(self.game_state.timestamp)
+        if isinstance(self._phase, ActiveState):
+            return dt.datetime.timestamp(self._phase.timestamp)
 
     def get_time_limits(self) -> GameTimeLimit:
-        return self.time_limits
+        return self._time_limits
 
     def is_idle(self) -> bool:
-        return isinstance(self.game_state, IdleState)
+        return isinstance(self._phase, IdleState)
