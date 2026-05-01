@@ -11,7 +11,7 @@ def test_leadingboard_initialization():
 def test_update_score_increases_score():
     lb = Leaderboard(["a"])
 
-    board = lb.updateScore("a", 5)
+    board = lb.update_score("a", 5)
 
     assert board == [("a", 5)]
 
@@ -19,8 +19,8 @@ def test_update_score_increases_score():
 def test_update_score_sorts_descending():
     lb = Leaderboard(["a", "b"])
 
-    lb.updateScore("a", 5)
-    lb.updateScore("b", 10)
+    lb.update_score("a", 5)
+    lb.update_score("b", 10)
 
     board = lb.get_leaderboard()
 
@@ -30,7 +30,7 @@ def test_update_score_sorts_descending():
 def test_update_score_unknown_user():
     lb = Leaderboard(["a"])
 
-    board = lb.updateScore("b", 5)
+    board = lb.update_score("b", 5)
 
     assert board == [("a", 0)]
 
@@ -46,7 +46,7 @@ def test_add_user_appends_with_zero_score():
 def test_add_user_does_not_duplicate():
     lb = Leaderboard(["a"])
 
-    lb.updateScore("a", 10)
+    lb.update_score("a", 10)
     lb.add_user("a")
 
     assert lb.get_leaderboard() == [("a", 10)]

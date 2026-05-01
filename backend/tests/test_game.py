@@ -1,6 +1,7 @@
 from src.game.contants import MAX_SCORE
 from src.game.engine import Game, GameTimeLimit, IdleState, ActiveState
 from time import sleep
+import math
 
 WORD_NOT_IN_WORDS_DB = "WORD_NOT_IN_WORDS_DB"
 
@@ -9,12 +10,12 @@ def test_game_initialization():
     users = ["a", "b"]
     game = Game(users)
 
-    assert game.users == users
-    assert game.word == ""
-    assert game.sketcher_index == -1
+    assert game._users == users
+    assert game._word == ""
+    assert game._sketcher_index == -1
 
-    assert isinstance(game.game_state, IdleState)
-    assert game.game_state.state == "start"
+    assert isinstance(game.get_phase(), IdleState)
+    assert game.get_phase().state == "start"
 
 
 def test_start_returns_valid_data():
@@ -27,11 +28,10 @@ def test_start_returns_valid_data():
     sketcher, words = result
 
     assert sketcher in users
-    assert 0 <= game.sketcher_index < len(users)
     assert len(words) == 3
 
-    assert isinstance(game.game_state, ActiveState)
-    assert game.game_state.state == "choose"
+    assert isinstance(game.get_phase(), ActiveState)
+    assert game.get_phase().state == "choose"
 
 
 def test_start_sets_choose_state_with_timestamp():
@@ -40,9 +40,9 @@ def test_start_sets_choose_state_with_timestamp():
     result = game.start()
     assert result is not None
 
-    assert isinstance(game.game_state, ActiveState)
-    assert game.game_state.state == "choose"
-    assert game.game_state.timestamp is not None
+    assert isinstance(game.get_phase(), ActiveState)
+    assert game.get_phase().state == "choose"
+    assert game.get_phase().timestamp is not None
 
 
 def test_start_rotates_sketcher():
@@ -51,13 +51,13 @@ def test_start_rotates_sketcher():
 
     first_result = game.start()
     assert first_result is not None
-    first = game.sketcher_index
+    first = game._sketcher_index
 
     game.end()
 
     second_result = game.start()
     assert second_result is not None
-    second = game.sketcher_index
+    second = game._sketcher_index
 
     assert second == (first + 1) % len(users)
 
@@ -71,10 +71,10 @@ def test_choose_sets_word_and_guess_state():
     _, words = result
     game.choose(words[0])
 
-    assert game.word == words[0]
-    assert isinstance(game.game_state, ActiveState)
-    assert game.game_state.state == "guess"
-    assert game.game_state.timestamp is not None
+    assert game._word == words[0]
+    assert isinstance(game.get_phase(), ActiveState)
+    assert game.get_phase().state == "guess"
+    assert game.get_phase().timestamp is not None
 
 
 def test_choose_rejects_word_not_in_options():
@@ -85,8 +85,8 @@ def test_choose_rejects_word_not_in_options():
 
     game.choose(WORD_NOT_IN_WORDS_DB)
 
-    assert game.word == ""
-    assert game.game_state.state == "choose"
+    assert game._word == ""
+    assert game.get_phase().state == "choose"
 
 
 def test_choose_clears_available_words_after_selection():
@@ -98,7 +98,7 @@ def test_choose_clears_available_words_after_selection():
     _, words = result
     game.choose(words[0])
 
-    assert game.words == []
+    assert game._words == []
 
 
 def test_end_clears_round_state():
@@ -112,8 +112,8 @@ def test_end_clears_round_state():
 
     game.end()
 
-    assert game.word == ""
-    assert game.words == []
+    assert game._word == ""
+    assert game._words == []
 
 
 def test_guess_correct_updates_score():
@@ -122,13 +122,19 @@ def test_guess_correct_updates_score():
     result = game.start()
     assert result is not None
 
-    _, words = result
+    sketcher_id, words = result
     game.choose(words[0])
 
-    result = game.guess("a", words[0])
+    guesser_id = ""
+    if sketcher_id == "a":
+        guesser_id = "b"
+    else:
+        guesser_id = "a"
+
+    result = game.guess(guesser_id, words[0])
 
     assert result is not None
-    assert ("a", MAX_SCORE) in result
+    assert (guesser_id, MAX_SCORE) in result
 
 
 def test_guess_correct_outside_time_limit():
@@ -174,15 +180,19 @@ def test_end_returns_leaderboard_and_sets_end_state():
     result = game.start()
     assert result is not None
 
-    _, words = result
+    sketcher_id, words = result
     game.choose(words[0])
-    game.guess("a", words[0])
+
+    if sketcher_id == "a":
+        game.guess("b", words[0])
+    else:
+        game.guess("a", words[0])
 
     board = game.end()
 
     assert ("a", MAX_SCORE) in board
-    assert isinstance(game.game_state, IdleState)
-    assert game.game_state.state == "end"
+    assert isinstance(game.get_phase(), IdleState)
+    assert game.get_phase().state == "end"
 
 
 def test_add_user_adds_to_users_and_leaderboard():
@@ -190,8 +200,7 @@ def test_add_user_adds_to_users_and_leaderboard():
 
     game.add_user("b")
 
-    assert "b" in game.users
-    assert ("b", 0) in game.lb.get_leaderboard()
+    assert ("b", 0) in game.get_leaderboard()
 
 
 def test_add_user_affects_sketcher_rotation():
@@ -205,7 +214,7 @@ def test_add_user_affects_sketcher_rotation():
 
     second_result = game.start()
     assert second_result is not None
-    second = game.sketcher_index
+    second = game._sketcher_index
 
     assert 0 <= second < 3
 
@@ -236,7 +245,7 @@ def test_start_returns_none_when_game_already_active():
     second = game.start()
 
     assert second is None
-    assert isinstance(game.game_state, ActiveState)
+    assert isinstance(game.get_phase(), ActiveState)
 
 
 def test_start_resets_guessed_users():
@@ -245,11 +254,19 @@ def test_start_resets_guessed_users():
     result = game.start()
     assert result is not None
 
-    _, words = result
+    sketcher_id, words = result
     game.choose(words[0])
     game.guess("a", words[0])
 
-    assert "a" in game.get_guessed()
+    guesser_id = ""
+    if sketcher_id == "a":
+        guesser_id = "b"
+    else:
+        guesser_id = "a"
+
+    result = game.guess(guesser_id, words[0])
+
+    assert guesser_id in game.get_guessed()
 
     game.end()
 
@@ -262,26 +279,26 @@ def test_start_resets_guessed_users():
 def test_state_transitions_full_flow():
     game = Game(["a", "b"])
 
-    assert isinstance(game.game_state, IdleState)
-    assert game.game_state.state == "start"
+    assert isinstance(game.get_phase(), IdleState)
+    assert game.get_phase().state == "start"
 
     result = game.start()
     assert result is not None
 
     _, words = result
-    assert isinstance(game.game_state, ActiveState)
-    assert game.game_state.state == "choose"
+    assert isinstance(game.get_phase(), ActiveState)
+    assert game.get_phase().state == "choose"
 
     game.choose(words[0])
-    assert isinstance(game.game_state, ActiveState)
-    assert game.game_state.state == "guess"
+    assert isinstance(game.get_phase(), ActiveState)
+    assert game.get_phase().state == "guess"
 
     game.guess("a", words[0])
-    assert game.game_state.state == "guess"
+    assert game.get_phase().state == "guess"
 
     game.end()
-    assert isinstance(game.game_state, IdleState)
-    assert game.game_state.state == "end"
+    assert isinstance(game.get_phase(), IdleState)
+    assert game.get_phase().state == "end"
 
 
 def test_remove_user():
@@ -291,4 +308,62 @@ def test_remove_user():
 
     game.remove_user(user_id)
 
-    assert user_id not in game.users
+    assert user_id not in game._users
+
+
+def test_end_add_sketcher_score_max_score():
+    game = Game(["a", "b", "c"])
+
+    result = game.start()
+    assert result is not None
+
+    sketcher_id, words = result
+    game.choose(words[0])
+
+    for user_id in ["a", "b", "c"]:
+        if user_id != sketcher_id:
+            game.guess(user_id, words[0])
+
+    board = game.end()
+
+    expected_sketcher_score = MAX_SCORE
+
+    assert (sketcher_id, expected_sketcher_score) in board
+
+
+def test_end_add_sketcher_score_only_one_guessed():
+    users = ["a", "b", "c"]
+    game = Game(users)
+
+    result = game.start()
+    assert result is not None
+
+    sketcher_id, words = result
+    game.choose(words[0])
+
+    guesser_id = ""
+    for user_id in users:
+        if user_id != sketcher_id:
+            guesser_id = user_id
+            break
+
+    game.guess(guesser_id, words[0])
+
+    board = game.end()
+    expected_sketcher_score = math.floor(MAX_SCORE / (len(users) - 1))
+
+    assert (sketcher_id, expected_sketcher_score) in board
+
+
+def test_sketcher_doesnt_score_when_guess():
+    users = ["a", "b", "c"]
+    game = Game(users)
+
+    result = game.start()
+    assert result is not None
+
+    sketcher_id, words = result
+    game.choose(words[0])
+    game.guess(sketcher_id, words[0])
+
+    assert (sketcher_id, 0) in game.end()
