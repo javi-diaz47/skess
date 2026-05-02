@@ -3,16 +3,16 @@ import { createContext, useEffect, useState } from "react"
 export interface UserSession {
   id: string
   name: string
-  color: string
+  color?: string
 }
 
-type CreateUserSession = Omit<UserSession, "id">
+type CreateUserSession = Omit<UserSession, "id" | "color">
 
 export interface SessionContext {
   session: UserSession
   isLoading: boolean
   hasSession: () => boolean
-  onCreateSession: (newSession: UserSession) => void
+  onCreateSession: (newSession: CreateUserSession) => void
   onDeleteSession: () => void
 }
 
@@ -59,7 +59,6 @@ export const SessionProvider = ({ children }) => {
     return session !== null
   }
 
-  console.log(session)
 
   return (
     <SessionContext.Provider value={{ session, isLoading, hasSession, onCreateSession, onDeleteSession }}>
