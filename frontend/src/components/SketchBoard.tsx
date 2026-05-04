@@ -14,24 +14,24 @@ export function SketchBoard() {
   } = useSketch()
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold">Sketch board</h2>
-      <div className="relative">
+    <div className="h-full flex flex-col items-center relative">
+      <h2 className="text-left text-2xl font-bold">Sketch board</h2>
+      <div className="relative w-full min-w-sm h-full">
         <canvas
           ref={canvas}
-          className="w-96 h-96 bg-background-100 dark:bg-background-800"
+          className="w-full h-full bg-background-100 dark:bg-background-800 rounded-2xl"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
         />
-        <svg className="w-96 h-96 absolute top-0 pointer-events-none">
+        <svg className="w-full h-full absolute top-0 pointer-events-none">
           <g>
             <path ref={svgPath} />
           </g>
         </svg>
       </div>
-      <div className="flex gap-2 mt-2 p-2 bg-background-100 dark:bg-background-800 rounded-lg w-fit">
+      <div className="flex absolute bottom-5 gap-2 mt-2 px-4 py-2 bg-background-200 dark:bg-background-900 rounded-2xl w-fit shadow-2xl shadow-background-200 dark:shadow-background-900">
         {Object.entries(SKETCH_COLORS).map(([name, value]) => {
           const c = value.base;
 
@@ -39,7 +39,7 @@ export function SketchBoard() {
             <button
               key={name}
               onClick={() => onChangeColor(c)}
-              className={`w-6 h-6 rounded-full ${color === c ? 'ring-2 ring-accent-200' : ''}`}
+              className={`w-6 h-6 rounded-full ${color === c ? 'ring-3 ring-accent-500 border-1 border-primary-200' : ''}`}
               style={{ backgroundColor: c }}
               title={name}
             />
