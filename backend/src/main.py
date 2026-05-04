@@ -234,7 +234,7 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
                 case SketchEvent():
                     ev.event_id = str(uuid4())
                     ev.user = UserWebSocket(**conn.user.__dict__)
-                    await manager.broadcast(ev.model_dump())
+                    await manager.broadcast_except_self(conn, ev.model_dump())
 
     except WebSocketDisconnect:
         manager.disconnect(conn)

@@ -56,3 +56,8 @@ class ConnectionManager:
     async def broadcast(self, data: Dict):
         for id in self.active_conns:
             await self.active_conns[id].ws.send_json(data)
+
+    async def broadcast_except_self(self, conn: Connection, data: Dict):
+        for id in self.active_conns:
+            if id != conn.user.id:
+                await self.active_conns[id].ws.send_json(data)
