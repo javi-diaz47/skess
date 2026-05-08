@@ -1,6 +1,7 @@
 import asyncio
-from typing import Dict
+from typing import Dict, List
 from uuid import uuid4
+import uuid
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from src.game.engine import Game, Phase
 from src.utils.colors import COLORS
@@ -49,6 +50,17 @@ async def game_timelimit(time):
     )
     await manager.broadcast(end_event.model_dump())
     print("all done")
+
+
+async def send_hint(pending_guessers_id: List[str], hint: str, letter_count) -> None:
+    ev = StatusEvent(
+        event_id=str(uuid.uuid4()),
+        type="status",
+        payload=PayloadStatusEvent(
+            status="hint", hint=hint, word_letter_count=letter_count
+        ),
+    )
+    await manager.multicast(pending_guessers_id, ev.model_dump())
 
 
 task_end_game: None | asyncio.Task = None
@@ -170,19 +182,15 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
                             status="guess",
                             sketcher=UserWebSocket(**sketcher.__dict__),
                             guess_word=guess_word,
+                            hint=game.hidden_word(),
+                            word_letter_count=game.word_letter_count(),
                         ),
                         timestamp=game.timestamp,
                         game_guess_limit=game.time_limits.guess,
                     )
                     await manager.broadcast(status_ev.model_dump())
 
-                    task_end_game = asyncio.create_task(
-                        game.schedule_hints(
-                            lambda active_guessers, hint: print(
-                                f"Hint: {hint} for {active_guessers}"
-                            )
-                        )
-                    )
+                    task_end_game = asyncio.create_task(game.schedule_hints(send_hint))
                     print(f"{ev.payload.word} was chosen")
 
                 case GuessEvent():
