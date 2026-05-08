@@ -417,22 +417,32 @@ async def test_pending_guessers():
     await asyncio.create_task(game.schedule_hints(validate))
 
 
-def validate_hint(hint: str, is_first_hint: bool = True):
-    if len(hint) <= 3:
+def get_letter_count(word: str):
+    count = 0
+    for ch in word:
+        if ch.isalpha():
+            count += 1
+    return count
+
+
+def validate_hint(hint: str, word_letter_count: int, is_first_hint: bool = True):
+    hint_letter_count = get_letter_count(hint)
+
+    if word_letter_count <= 3:
         assert is_first_hint is True
-        assert hint.count("_") == 2
+        assert hint_letter_count == 1
     else:
         if is_first_hint:
-            assert hint.count("_") == len(hint) - 1
+            assert hint_letter_count == 1
         else:
-            assert hint.count("_") == len(hint) - 2
+            assert hint_letter_count == 2
 
 
 @pytest.mark.asyncio
-async def test_hints_words_with_length_less_than_three():
-    GUESS_TIME = 3
+async def test_hints_words_with_length_equal_or_less_than_three():
+    GUESS_TIME = 1
     users = ["a", "b"]
-    game = Game(users, GameTimeLimit(guess=GUESS_TIME), ["ada"])
+    game = Game(users, GameTimeLimit(guess=GUESS_TIME), ["l------e"])
 
     result = game.start()
     assert result is not None
@@ -454,9 +464,9 @@ async def test_hints_words_with_length_less_than_three():
 
 @pytest.mark.asyncio
 async def test_hints_words_with_length_bigger_than_three():
-    GUESS_TIME = 3
+    GUESS_TIME = 1
     users = ["a", "b"]
-    game = Game(users, GameTimeLimit(guess=GUESS_TIME), ["ada lovelace"])
+    game = Game(users, GameTimeLimit(guess=GUESS_TIME), ["ada l- -- e"])
 
     result = game.start()
     assert result is not None
@@ -469,8 +479,20 @@ async def test_hints_words_with_length_bigger_than_three():
     def validate(hint: str):
         nonlocal is_first_hint
 
-        validate_hint(hint, is_first_hint)
+        validate_hint(hint, game.word_letter_count(), is_first_hint)
 
         is_first_hint = False
 
     await asyncio.create_task(game.schedule_hints(lambda _, hint: validate(hint)))
+
+
+def test_word_letter():
+    game = Game(["a", "b"], dictionary=["ada-love lace"])
+
+    result = game.start()
+    assert result is not None
+
+    _, words = result
+    game.choose(words[0])
+
+    assert game.word_letter_count() == 11
