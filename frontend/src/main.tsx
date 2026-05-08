@@ -7,22 +7,27 @@ import { Login } from './Login.tsx'
 import { Home } from './Home.tsx'
 import { WebSocketProvider } from './context/WebsSocketsContext.tsx'
 import './index.css'
+import { GameStatusProvider } from './context/GameStatusContext.tsx'
 
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <SessionProvider>
       <WebSocketProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
+        <GameStatusProvider>
 
-            <Route element={<ProtectedRoutes />}>
-              <Route path="/" element={<Home />} />
-            </Route>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
 
-          </Routes>
-        </BrowserRouter>
+              <Route element={<ProtectedRoutes />}>
+                <Route path="/" element={<Home />} />
+              </Route>
+
+            </Routes>
+          </BrowserRouter>
+
+        </GameStatusProvider>
       </WebSocketProvider>
     </SessionProvider>
   </StrictMode>,
