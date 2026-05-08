@@ -401,7 +401,7 @@ async def test_pending_guessers():
 
     correct_guesser_id = ""
 
-    def validate(pending_guessers: List[str], _):
+    async def validate(pending_guessers: List[str], _, __):
         nonlocal correct_guesser_id
 
         validate_pending_guessers(
@@ -452,14 +452,14 @@ async def test_hints_words_with_length_equal_or_less_than_three():
 
     is_first_hint = True
 
-    def validate(hint: str):
+    async def validate(_, hint: str, __):
         nonlocal is_first_hint
 
         validate_hint(hint, is_first_hint)
 
         is_first_hint = False
 
-    await asyncio.create_task(game.schedule_hints(lambda _, hint: validate(hint)))
+    await asyncio.create_task(game.schedule_hints(validate))
 
 
 @pytest.mark.asyncio
@@ -476,14 +476,14 @@ async def test_hints_words_with_length_bigger_than_three():
 
     is_first_hint = True
 
-    def validate(hint: str):
+    async def validate(_, hint: str, word_letter_count):
         nonlocal is_first_hint
 
-        validate_hint(hint, game.word_letter_count(), is_first_hint)
+        validate_hint(hint, word_letter_count, is_first_hint)
 
         is_first_hint = False
 
-    await asyncio.create_task(game.schedule_hints(lambda _, hint: validate(hint)))
+    await asyncio.create_task(game.schedule_hints(validate))
 
 
 def test_word_letter():
@@ -496,3 +496,15 @@ def test_word_letter():
     game.choose(words[0])
 
     assert game.word_letter_count() == 11
+
+
+def test_hidden_word():
+    game = Game(["a", "b"], dictionary=["ada-love lace"])
+
+    result = game.start()
+    assert result is not None
+
+    _, words = result
+    game.choose(words[0])
+
+    assert game.hidden_word() == "___-____ ____"
