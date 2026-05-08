@@ -163,18 +163,24 @@ class Game:
 
         size = len(self._word)
 
-        hint = ["_"] * size
+        hint = ["_" if ch.isalpha() else ch for ch in self._word]
         max_index = size - 1
 
         first_hint_index = random.randint(0, max_index)
+        while not self._word[first_hint_index].isalpha():
+            first_hint_index = random.randint(0, max_index)
+
         hint[first_hint_index] = self._word[first_hint_index]
 
         await asyncio.sleep(third)
         func(self.pending_guessers(), "".join(hint))
 
-        if size > 3:
+        if self.word_letter_count() > 3:
             second_hint_index = first_hint_index
-            while second_hint_index == first_hint_index:
+            while (
+                second_hint_index == first_hint_index
+                or not self._word[second_hint_index].isalpha()
+            ):
                 second_hint_index = random.randint(0, max_index)
 
             hint[second_hint_index] = self._word[second_hint_index]
@@ -188,6 +194,13 @@ class Game:
             for user_id in self._users
             if user_id not in self._correct_guessers and user_id != self._sketcher_id
         ]
+
+    def word_letter_count(self) -> int:
+        size = 0
+        for ch in self._word:
+            if ch.isalpha():
+                size += 1
+        return size
 
     def is_idle(self) -> bool:
         return isinstance(self._phase, IdleState)
