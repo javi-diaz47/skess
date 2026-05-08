@@ -60,7 +60,10 @@ export const useChat = () => {
         const diff = (now.getTime() - timestamp.getTime()) / ONE_SECOND_IN_MILISECONDS
 
         const leftTime = Math.round(ev.game_guess_limit - diff)
-        startTimer(leftTime)
+
+        if (leftTime > 0) {
+          startTimer(leftTime)
+        }
       }
       if (ev.payload.status === "end") {
         cancelTimer()
