@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 from fastapi import WebSocket
 
 
@@ -57,7 +57,12 @@ class ConnectionManager:
         for id in self.active_conns:
             await self.active_conns[id].ws.send_json(data)
 
+    async def multicast(self, users_id: List[str], data: Dict):
+        for user_id in users_id:
+            if user_id in self.active_conns:
+                await self.active_conns[user_id].ws.send_json(data)
+
     async def broadcast_except_self(self, conn: Connection, data: Dict):
-        for id in self.active_conns:
-            if id != conn.user.id:
-                await self.active_conns[id].ws.send_json(data)
+        for user_id in self.active_conns:
+            if user_id != conn.user.id:
+                await self.active_conns[user_id].ws.send_json(data)
