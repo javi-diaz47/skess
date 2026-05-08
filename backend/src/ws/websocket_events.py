@@ -67,6 +67,8 @@ class LeaderboardEvent(BaseSocketEvent):
 
 class PayloadStatusEvent(BaseModel):
     status: Literal["start", "guess", "end"]
+    sketcher: UserWebSocket | None = None
+    guess_word: str | None = None
 
 
 class StatusEvent(BaseSocketEvent):
