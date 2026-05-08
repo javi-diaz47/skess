@@ -1,3 +1,6 @@
+import asyncio
+from typing import List
+import pytest
 from src.game.contants import MAX_SCORE
 from src.game.engine import Game, GameTimeLimit, IdleState, ActiveState
 from time import sleep
@@ -14,8 +17,8 @@ def test_game_initialization():
     assert game._word == ""
     assert game._sketcher_index == -1
 
-    assert isinstance(game.get_phase(), IdleState)
-    assert game.get_phase().state == "start"
+    assert isinstance(game.phase, IdleState)
+    assert game.phase.state == "start"
 
 
 def test_start_returns_valid_data():
@@ -30,8 +33,8 @@ def test_start_returns_valid_data():
     assert sketcher in users
     assert len(words) == 3
 
-    assert isinstance(game.get_phase(), ActiveState)
-    assert game.get_phase().state == "choose"
+    assert isinstance(game.phase, ActiveState)
+    assert game.phase.state == "choose"
 
 
 def test_start_sets_choose_state_with_timestamp():
@@ -40,9 +43,9 @@ def test_start_sets_choose_state_with_timestamp():
     result = game.start()
     assert result is not None
 
-    assert isinstance(game.get_phase(), ActiveState)
-    assert game.get_phase().state == "choose"
-    assert game.get_phase().timestamp is not None
+    assert isinstance(game.phase, ActiveState)
+    assert game.phase.state == "choose"
+    assert game.phase.timestamp is not None
 
 
 def test_start_rotates_sketcher():
@@ -72,9 +75,9 @@ def test_choose_sets_word_and_guess_state():
     game.choose(words[0])
 
     assert game._word == words[0]
-    assert isinstance(game.get_phase(), ActiveState)
-    assert game.get_phase().state == "guess"
-    assert game.get_phase().timestamp is not None
+    assert isinstance(game.phase, ActiveState)
+    assert game.phase.state == "guess"
+    assert game.phase.timestamp is not None
 
 
 def test_choose_rejects_word_not_in_options():
@@ -86,7 +89,7 @@ def test_choose_rejects_word_not_in_options():
     game.choose(WORD_NOT_IN_WORDS_DB)
 
     assert game._word == ""
-    assert game.get_phase().state == "choose"
+    assert game.phase.state == "choose"
 
 
 def test_choose_clears_available_words_after_selection():
@@ -191,8 +194,8 @@ def test_end_returns_leaderboard_and_sets_end_state():
     board = game.end()
 
     assert ("a", MAX_SCORE) in board
-    assert isinstance(game.get_phase(), IdleState)
-    assert game.get_phase().state == "end"
+    assert isinstance(game.phase, IdleState)
+    assert game.phase.state == "end"
 
 
 def test_add_user_adds_to_users_and_leaderboard():
@@ -200,7 +203,7 @@ def test_add_user_adds_to_users_and_leaderboard():
 
     game.add_user("b")
 
-    assert ("b", 0) in game.get_leaderboard()
+    assert ("b", 0) in game.leaderboard
 
 
 def test_add_user_affects_sketcher_rotation():
@@ -245,7 +248,7 @@ def test_start_returns_none_when_game_already_active():
     second = game.start()
 
     assert second is None
-    assert isinstance(game.get_phase(), ActiveState)
+    assert isinstance(game.phase, ActiveState)
 
 
 def test_start_resets_guessed_users():
@@ -266,39 +269,39 @@ def test_start_resets_guessed_users():
 
     result = game.guess(guesser_id, words[0])
 
-    assert guesser_id in game.get_guessed()
+    assert guesser_id in game.correct_guessers
 
     game.end()
 
     next_round = game.start()
     assert next_round is not None
 
-    assert game.get_guessed() == []
+    assert game.correct_guessers == []
 
 
 def test_state_transitions_full_flow():
     game = Game(["a", "b"])
 
-    assert isinstance(game.get_phase(), IdleState)
-    assert game.get_phase().state == "start"
+    assert isinstance(game.phase, IdleState)
+    assert game.phase.state == "start"
 
     result = game.start()
     assert result is not None
 
     _, words = result
-    assert isinstance(game.get_phase(), ActiveState)
-    assert game.get_phase().state == "choose"
+    assert isinstance(game.phase, ActiveState)
+    assert game.phase.state == "choose"
 
     game.choose(words[0])
-    assert isinstance(game.get_phase(), ActiveState)
-    assert game.get_phase().state == "guess"
+    assert isinstance(game.phase, ActiveState)
+    assert game.phase.state == "guess"
 
     game.guess("a", words[0])
-    assert game.get_phase().state == "guess"
+    assert game.phase.state == "guess"
 
     game.end()
-    assert isinstance(game.get_phase(), IdleState)
-    assert game.get_phase().state == "end"
+    assert isinstance(game.phase, IdleState)
+    assert game.phase.state == "end"
 
 
 def test_remove_user():
@@ -367,3 +370,107 @@ def test_sketcher_doesnt_score_when_guess():
     game.guess(sketcher_id, words[0])
 
     assert (sketcher_id, 0) in game.end()
+
+
+def validate_pending_guessers(
+    pending_guessers: List[str],
+    users: List[str],
+    sketcher_id: str,
+    correct_guesser_id: str = "",
+) -> None:
+    expected_pending_guessers = [
+        user_id
+        for user_id in users
+        if user_id != sketcher_id and user_id != correct_guesser_id
+    ]
+    assert expected_pending_guessers == pending_guessers
+
+
+@pytest.mark.asyncio
+async def test_pending_guessers():
+    GUESS_TIME = 3
+
+    users = ["a", "b", "c"]
+    game = Game(users, GameTimeLimit(guess=GUESS_TIME))
+
+    result = game.start()
+    assert result is not None
+
+    sketcher_id, words = result
+    game.choose(words[0])
+
+    correct_guesser_id = ""
+
+    def validate(pending_guessers: List[str], _):
+        nonlocal correct_guesser_id
+
+        validate_pending_guessers(
+            pending_guessers, users, sketcher_id, correct_guesser_id
+        )
+
+        for user_id in users:
+            if user_id != sketcher_id:
+                game.guess(user_id, words[0])
+                correct_guesser_id = user_id
+                break
+
+    await asyncio.create_task(game.schedule_hints(validate))
+
+
+def validate_hint(hint: str, is_first_hint: bool = True):
+    if len(hint) <= 3:
+        assert is_first_hint is True
+        assert hint.count("_") == 2
+    else:
+        if is_first_hint:
+            assert hint.count("_") == len(hint) - 1
+        else:
+            assert hint.count("_") == len(hint) - 2
+
+
+@pytest.mark.asyncio
+async def test_hints_words_with_length_less_than_three():
+    GUESS_TIME = 3
+    users = ["a", "b"]
+    game = Game(users, GameTimeLimit(guess=GUESS_TIME), ["ada"])
+
+    result = game.start()
+    assert result is not None
+
+    _, words = result
+    game.choose(words[0])
+
+    is_first_hint = True
+
+    def validate(hint: str):
+        nonlocal is_first_hint
+
+        validate_hint(hint, is_first_hint)
+
+        is_first_hint = False
+
+    await asyncio.create_task(game.schedule_hints(lambda _, hint: validate(hint)))
+
+
+@pytest.mark.asyncio
+async def test_hints_words_with_length_bigger_than_three():
+    GUESS_TIME = 3
+    users = ["a", "b"]
+    game = Game(users, GameTimeLimit(guess=GUESS_TIME), ["ada lovelace"])
+
+    result = game.start()
+    assert result is not None
+
+    _, words = result
+    game.choose(words[0])
+
+    is_first_hint = True
+
+    def validate(hint: str):
+        nonlocal is_first_hint
+
+        validate_hint(hint, is_first_hint)
+
+        is_first_hint = False
+
+    await asyncio.create_task(game.schedule_hints(lambda _, hint: validate(hint)))
