@@ -1,7 +1,7 @@
 import asyncio
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Callable, List, Literal, Set, Tuple, Union
+from typing import Awaitable, Callable, List, Literal, Set, Tuple, Union
 from pydantic import BaseModel
 from src.game.contants import MAX_SCORE, WORDS
 from src.game.leaderboard import Leaderboard, LeaderboardScores
@@ -158,13 +158,17 @@ class Game:
         self._set_phase(Phase.END)
         return self._leaderboard.get_leaderboard()
 
-    async def schedule_hints(self, func: Callable[[List[str], str], None]) -> None:
+    async def schedule_hints(
+        self, func: Callable[[List[str], str, int], Awaitable[None]]
+    ) -> None:
         third = self._time_limits.guess // 3
 
         size = len(self._word)
 
-        hint = ["_" if ch.isalpha() else ch for ch in self._word]
+        hint = list(self.hidden_word())
         max_index = size - 1
+
+        letter_count = self.word_letter_count()
 
         first_hint_index = random.randint(0, max_index)
         while not self._word[first_hint_index].isalpha():
@@ -173,7 +177,7 @@ class Game:
         hint[first_hint_index] = self._word[first_hint_index]
 
         await asyncio.sleep(third)
-        func(self.pending_guessers(), "".join(hint))
+        await func(self.pending_guessers(), "".join(hint), letter_count)
 
         if self.word_letter_count() > 3:
             second_hint_index = first_hint_index
@@ -186,7 +190,7 @@ class Game:
             hint[second_hint_index] = self._word[second_hint_index]
 
             await asyncio.sleep(third)
-            func(self.pending_guessers(), "".join(hint))
+            await func(self.pending_guessers(), "".join(hint), letter_count)
 
     def pending_guessers(self):
         return [
@@ -201,6 +205,9 @@ class Game:
             if ch.isalpha():
                 size += 1
         return size
+
+    def hidden_word(self) -> str:
+        return "".join(["_" if ch.isalpha() else ch for ch in self._word])
 
     def is_idle(self) -> bool:
         return isinstance(self._phase, IdleState)
