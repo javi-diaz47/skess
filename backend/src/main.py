@@ -224,12 +224,11 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
                     )
                     await manager.broadcast(lb_event.model_dump())
 
-                    # All users guessed (except the sketcher) END GAME
+                    # broadcast that user.id guessed correctly
                     guessed = len(game.correct_guessers)
                     total = len(game.users)
 
-                    # broadcast that user.id guessed correctly
-                    correct_guess_ev = GuessEvent(
+                    correct_guess_message_ev = GuessEvent(
                         event_id=str(uuid4()),
                         user=UserWebSocket(**conn.user.__dict__),
                         type="guess",
@@ -237,8 +236,28 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
                             message=f"{conn.user.name} guessed the word", correct=True
                         ),
                     )
-                    await manager.broadcast(correct_guess_ev.model_dump())
+                    await manager.broadcast(correct_guess_message_ev.model_dump())
 
+                    sketcher_id = game.sketcher_id
+                    sketcher = manager.active_conns[sketcher_id].user
+
+                    correct_guess_hint_ev = StatusEvent(
+                        event_id=str(uuid4()),
+                        type="status",
+                        payload=PayloadStatusEvent(
+                            status="hint",
+                            sketcher=UserWebSocket(**sketcher.__dict__),
+                            hint=game.word,
+                            word_letter_count=game.word_letter_count(),
+                        ),
+                        timestamp=game.timestamp,
+                        game_guess_limit=game.time_limits.guess,
+                    )
+                    await manager.send_personal_message(
+                        conn, correct_guess_hint_ev.model_dump()
+                    )
+
+                    # All users guessed (except the sketcher) END GAME
                     if guessed == total - 1:
                         positions = game.end()
 
