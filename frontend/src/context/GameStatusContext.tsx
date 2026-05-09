@@ -28,16 +28,21 @@ export const GameStatusProvider = ({ children }) => {
   useEffect(() => {
 
     const unsubstatus = subscribe("status", (ev) => {
-      setStatus(prev => ({
-        ...prev,
-        state: ev?.payload?.status,
-        sketcher: ev?.payload?.sketcher,
-        timestamp: ev.timestamp,
-        game_guess_limit: ev.game_guess_limit,
-        hint: ev?.payload?.hint,
-        word_letter_count: ev?.payload?.word_letter_count
-
-      }))
+      setStatus(prev => {
+        console.log(ev.payload.status, ev)
+        if (ev?.payload?.status === "hint") {
+          return ({ ...prev, state: ev?.payload?.status, hint: ev?.payload?.hint, word_letter_count: ev?.payload?.word_letter_count })
+        }
+        return ({
+          ...prev,
+          state: ev?.payload?.status,
+          sketcher: ev?.payload?.sketcher,
+          timestamp: ev.timestamp,
+          game_guess_limit: ev.game_guess_limit,
+          hint: ev?.payload?.hint,
+          word_letter_count: ev?.payload?.word_letter_count
+        })
+      })
     })
 
 

@@ -36,20 +36,20 @@ export function StatusBar() {
 
 
   return (
-    <section className="flex items-center gap-8">
+    <section className="flex justify-around items-center gap-8">
       <Timer time={time} />
 
       {
         status?.hint && (
-          <div>
+          <div className="flex gap-4 text-2xl font-bold">
             <p>
               {
-                status?.hint?.split("").map((ch, i) => (
+                status?.hint.split("").map((ch, i) => (
                   <span key={`${i}-${ch}`} className="mr-2">{ch}</span>
                 ))
               }
             </p>
-            <span>
+            <span className="self-end text-base">
               {status?.word_letter_count}
             </span>
           </div>
