@@ -108,6 +108,11 @@ class Game:
         self._users.remove(id)
         self._leaderboard.remove_user(id)
 
+    async def on_end(self, func: Callable[[Game], Awaitable[None]]) -> None:
+        await asyncio.sleep(self._time_limits.guess)
+        self.end()
+        await func(self)
+
     def start(self) -> Tuple[str, List[str]] | None:
         if isinstance(self._phase, ActiveState):
             return None
