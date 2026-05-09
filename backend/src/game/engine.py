@@ -47,6 +47,7 @@ class Game:
 
         self._words: List[str] = []
         self._word: str = ""
+        self._hint = ""
 
         self._phase: GameState = IdleState(state=Phase.START, timestamp=None)
         self._leaderboard: Leaderboard = Leaderboard(users)
@@ -95,6 +96,10 @@ class Game:
     def sketcher_id(self) -> str:
         return self._sketcher_id
 
+    @property
+    def hint(self) -> str:
+        return self._hint
+
     def add_user(self, user_id) -> None:
         self._users.append(user_id)
         self._leaderboard.add_user(user_id)
@@ -130,6 +135,7 @@ class Game:
         self._word = word
         self._words = []
         self._set_phase(Phase.GUESS)
+        self._hint = self._hide_word()
         return True
 
     def guess(self, user_id: str, guess: str) -> LeaderboardScores | None:
@@ -165,7 +171,7 @@ class Game:
 
         size = len(self._word)
 
-        hint = list(self.hidden_word())
+        hint = list(self._hint)
         max_index = size - 1
 
         letter_count = self.word_letter_count()
@@ -177,7 +183,8 @@ class Game:
         hint[first_hint_index] = self._word[first_hint_index]
 
         await asyncio.sleep(third)
-        await func(self.pending_guessers(), "".join(hint), letter_count)
+        self._hint = "".join(hint)
+        await func(self.pending_guessers(), self._hint, letter_count)
 
         if self.word_letter_count() > 3:
             second_hint_index = first_hint_index
@@ -190,7 +197,8 @@ class Game:
             hint[second_hint_index] = self._word[second_hint_index]
 
             await asyncio.sleep(third)
-            await func(self.pending_guessers(), "".join(hint), letter_count)
+            self._hint = "".join(hint)
+            await func(self.pending_guessers(), self._hint, letter_count)
 
     def pending_guessers(self):
         return [
@@ -206,9 +214,6 @@ class Game:
                 size += 1
         return size
 
-    def hidden_word(self) -> str:
-        return "".join(["_" if ch.isalpha() else ch for ch in self._word])
-
     def is_idle(self) -> bool:
         return isinstance(self._phase, IdleState)
 
@@ -217,6 +222,9 @@ class Game:
             self._phase = ActiveState(state=new_state, timestamp=self._now())
         else:
             self._phase = IdleState(state=Phase.END, timestamp=None)
+
+    def _hide_word(self) -> str:
+        return "".join(["_" if ch.isalpha() else ch for ch in self._word])
 
     def _add_sketcher_score(self) -> None:
         if self._sketcher_id not in self._users:
@@ -235,6 +243,7 @@ class Game:
     def _reset_round(self) -> None:
         self._word = ""
         self._words = []
+        self._hint = ""
         self._sketcher_id = ""
         self._correct_guessers = set()
 
