@@ -40,9 +40,7 @@ GAME_GUESS_TIME_LIMIT = 35
 game: Game = Game([])
 
 
-async def game_timelimit(time):
-    await asyncio.sleep(time)
-    game.end()
+async def on_end_game(game: Game):
     end_event = StatusEvent(
         event_id=str(uuid4()),
         type="status",
@@ -203,6 +201,8 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
 
                     task_end_game = asyncio.create_task(game.schedule_hints(send_hint))
                     print(f"{ev.payload.word} was chosen")
+
+                    asyncio.create_task(game.on_end(on_end_game))
 
                 case GuessEvent():
                     positions = game.guess(conn.user.id, ev.payload.message)
