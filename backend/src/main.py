@@ -46,7 +46,9 @@ async def game_timelimit(time):
     end_event = StatusEvent(
         event_id=str(uuid4()),
         type="status",
-        payload=PayloadStatusEvent(status="end"),
+        payload=PayloadStatusEvent(
+            status="end", hint=game.word, word_letter_count=game.word_letter_count()
+        ),
     )
     await manager.broadcast(end_event.model_dump())
     print("all done")
@@ -96,10 +98,18 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
         await manager.broadcast(lb_event.model_dump())
 
         if game.state == Phase.GUESS:
+            sketcher_id = game.sketcher_id
+            sketcher = manager.active_conns[sketcher_id].user
+
             status_ev = StatusEvent(
                 event_id=str(uuid4()),
                 type="status",
-                payload=PayloadStatusEvent(status="guess"),
+                payload=PayloadStatusEvent(
+                    status="guess",
+                    sketcher=UserWebSocket(**sketcher.__dict__),
+                    hint=game.hint,
+                    word_letter_count=game.word_letter_count(),
+                ),
                 timestamp=game.timestamp,
                 game_guess_limit=game.time_limits.guess,
             )
@@ -173,7 +183,6 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
 
                     sketcher_id = game.sketcher_id
                     sketcher = manager.active_conns[sketcher_id].user
-                    guess_word = game.word
 
                     status_ev = StatusEvent(
                         event_id=str(uuid4()),
@@ -181,14 +190,16 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
                         payload=PayloadStatusEvent(
                             status="guess",
                             sketcher=UserWebSocket(**sketcher.__dict__),
-                            guess_word=guess_word,
-                            hint=game.hidden_word(),
+                            hint=game.hint,
                             word_letter_count=game.word_letter_count(),
                         ),
                         timestamp=game.timestamp,
                         game_guess_limit=game.time_limits.guess,
                     )
-                    await manager.broadcast(status_ev.model_dump())
+                    await manager.broadcast_except_self(conn, status_ev.model_dump())
+
+                    status_ev.payload.hint = game.word
+                    await manager.send_message(conn.user.id, status_ev.model_dump())
 
                     task_end_game = asyncio.create_task(game.schedule_hints(send_hint))
                     print(f"{ev.payload.word} was chosen")
