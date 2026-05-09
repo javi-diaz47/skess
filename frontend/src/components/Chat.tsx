@@ -27,7 +27,8 @@ export function Chat() {
     let counter = 0
     for (let i = 0; i < word.length; i++) {
       const code = word.charCodeAt(i)
-      if (code > 47 && code < 58 || code > 96 && code < 123) counter++
+      console.log("z".codePointAt(0))
+      if (code > 64 && code < 90 || code > 96 && code < 123) counter++
     }
     return counter
   }
