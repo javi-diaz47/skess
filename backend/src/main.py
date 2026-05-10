@@ -1,9 +1,8 @@
-import asyncio
 from typing import Dict, List
 from uuid import uuid4
 import uuid
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from src.game.engine import Game, Phase
+from src.game.engine import Game, GameTimeLimit, Phase
 from src.utils.colors import COLORS
 from src.ws.connection_manager import Connection, ConnectionManager, User
 from src.ws.validation_message import validate_message, validate_payload
@@ -37,22 +36,46 @@ def ping():
 GAME_CHOOSE_TIME_LIMIT = 10
 GAME_GUESS_TIME_LIMIT = 35
 
-game: Game = Game([])
 
-
-async def on_end_game(game: Game):
-    end_event = StatusEvent(
-        event_id=str(uuid4()),
+async def end_game(game: Game):
+    correct_guess_message_ev = StatusEvent(
+        event_id=str(uuid.uuid4()),
         type="status",
         payload=PayloadStatusEvent(
-            status="end", hint=game.word, word_letter_count=game.word_letter_count()
+            status="hint", hint=game.word, word_letter_count=game.word_letter_count()
         ),
     )
-    await manager.broadcast(end_event.model_dump())
-    print("all done")
+    await manager.broadcast(correct_guess_message_ev.model_dump())
+
+    leaderboard = create_leaderboard(manager.active_conns, game.leaderboard)
+
+    lb_event = LeaderboardEvent(
+        event_id=str(uuid4()),
+        type="leaderboard",
+        payload=PayloadLeaderboard(leaderboard=leaderboard),
+    )
+    await manager.broadcast(lb_event.model_dump())
+
+    sketcher_id = game.sketcher_id
+    sketcher = manager.active_conns[sketcher_id].user
+
+    end_ev = StatusEvent(
+        type="status",
+        payload=PayloadStatusEvent(
+            status="end",
+            sketcher=UserWebSocket(**sketcher.__dict__),
+            hint=game.word,
+            word_letter_count=game.word_letter_count(),
+        ),
+        timestamp=game.timestamp,
+        game_guess_limit=game.time_limits.guess,
+    )
+    await manager.broadcast(end_ev.model_dump())
 
 
-async def send_hint(pending_guessers_id: List[str], hint: str, letter_count) -> None:
+async def send_hint(
+    pending_guessers_id: List[str], hint: str, letter_count: int
+) -> None:
     ev = StatusEvent(
         event_id=str(uuid.uuid4()),
         type="status",
@@ -60,10 +83,18 @@ async def send_hint(pending_guessers_id: List[str], hint: str, letter_count) -> 
             status="hint", hint=hint, word_letter_count=letter_count
         ),
     )
+
     await manager.multicast(pending_guessers_id, ev.model_dump())
 
 
-task_end_game: None | asyncio.Task = None
+game: Game = Game(
+    users=[],
+    time_limits=GameTimeLimit(
+        choose=GAME_CHOOSE_TIME_LIMIT, guess=GAME_GUESS_TIME_LIMIT
+    ),
+    on_end_game=end_game,
+    on_hint=send_hint,
+)
 
 
 def create_leaderboard(conns: Dict[str, Connection], positions):
@@ -199,10 +230,7 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
                     status_ev.payload.hint = game.word
                     await manager.send_message(conn.user.id, status_ev.model_dump())
 
-                    task_end_game = asyncio.create_task(game.schedule_hints(send_hint))
                     print(f"{ev.payload.word} was chosen")
-
-                    asyncio.create_task(game.on_end(on_end_game))
 
                 case GuessEvent():
                     positions = game.guess(conn.user.id, ev.payload.message)
@@ -224,10 +252,6 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
                     )
                     await manager.broadcast(lb_event.model_dump())
 
-                    # broadcast that user.id guessed correctly
-                    guessed = len(game.correct_guessers)
-                    total = len(game.users)
-
                     correct_guess_message_ev = GuessEvent(
                         event_id=str(uuid4()),
                         user=UserWebSocket(**conn.user.__dict__),
@@ -238,49 +262,21 @@ async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
                     )
                     await manager.broadcast(correct_guess_message_ev.model_dump())
 
-                    sketcher_id = game.sketcher_id
-                    sketcher = manager.active_conns[sketcher_id].user
-
                     correct_guess_hint_ev = StatusEvent(
                         event_id=str(uuid4()),
                         type="status",
                         payload=PayloadStatusEvent(
                             status="hint",
-                            sketcher=UserWebSocket(**sketcher.__dict__),
                             hint=game.word,
                             word_letter_count=game.word_letter_count(),
                         ),
-                        timestamp=game.timestamp,
-                        game_guess_limit=game.time_limits.guess,
                     )
                     await manager.send_personal_message(
                         conn, correct_guess_hint_ev.model_dump()
                     )
 
-                    # All users guessed (except the sketcher) END GAME
-                    if guessed == total - 1:
-                        positions = game.end()
-
-                        # send leaderboard with sketcher score
-                        leaderboard = create_leaderboard(
-                            manager.active_conns, positions
-                        )
-
-                        lb_event = LeaderboardEvent(
-                            event_id=str(uuid4()),
-                            type="leaderboard",
-                            payload=PayloadLeaderboard(leaderboard=leaderboard),
-                        )
-                        await manager.broadcast(lb_event.model_dump())
-
-                        end_event = StatusEvent(
-                            event_id=str(uuid4()),
-                            type="status",
-                            payload=PayloadStatusEvent(status="end"),
-                        )
-                        if task_end_game is not None:
-                            task_end_game.cancel()
-                        await manager.broadcast(end_event.model_dump())
+                    if len(game.correct_guessers) == len(game.users) - 1:
+                        await game._schedule_end(wait=False)
 
                 case SketchEvent():
                     ev.event_id = str(uuid4())
