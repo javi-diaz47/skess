@@ -41,6 +41,7 @@ class Game:
         self,
         users: List[str],
         time_limits: GameTimeLimit = GameTimeLimit(),
+        max_score: int = MAX_SCORE,
         dictionary=WORDS,
         on_end_game: Callable[[Game], Awaitable[None]] | None = None,
         on_hint: Callable[[List[str], str, int], Awaitable[None]] | None = None,
@@ -60,6 +61,8 @@ class Game:
         self._time_limits: GameTimeLimit = time_limits
 
         self._dictionary = dictionary
+        self._max_score = max_score
+        self._guessers_time = []
 
         self._on_end_game = on_end_game
         self._on_hint = on_hint
@@ -162,12 +165,17 @@ class Game:
         if diff > self._time_limits.guess:
             return None
 
+        score = 0
+
         if (
             guess == self._word
             and user_id not in self._correct_guessers
             and user_id != self._sketcher_id
         ):
             self._correct_guessers.add(user_id)
+
+            score = self._get_score(diff)
+            self._guessers_time.append(score)
 
             if len(self._correct_guessers) == len(self._users) - 1:
                 if self._task_on_hint is not None:
@@ -176,13 +184,17 @@ class Game:
                 if self._task_on_end is not None:
                     self._task_on_end.cancel()
 
-            return self._leaderboard.update_score(user_id, MAX_SCORE)
+            return self._leaderboard.update_score(user_id, score)
 
         return None
+
+    def _get_score(self, t: int) -> int:
+        return round(-(self._max_score * t / self.time_limits.guess) + self._max_score)
 
     def end(self) -> LeaderboardScores:
         self._reset_round()
         self._set_phase(Phase.END)
+        self._guessers_time = []
         return self._leaderboard.get_leaderboard()
 
     def pending_guessers(self):
@@ -264,15 +276,17 @@ class Game:
         if self._sketcher_id not in self._users:
             return None
 
-        guessed_count = len(self._correct_guessers)
-        total_correct_guessers_users = len(self._users) - 1
+        score = 0
 
-        score = min(
-            math.floor(MAX_SCORE / total_correct_guessers_users * guessed_count),
-            MAX_SCORE,
-        )
+        total_guessers = len(self.users) - 1
 
-        self._leaderboard.update_score(self._sketcher_id, score)
+        print(self._guessers_time)
+        for t in self._guessers_time:
+            score += t / total_guessers
+
+        print("sketcher score ", score)
+
+        self._leaderboard.update_score(self._sketcher_id, round(score))
 
     def _reset_round(self) -> None:
         self._word = ""
