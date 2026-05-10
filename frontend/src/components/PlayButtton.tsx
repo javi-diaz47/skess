@@ -28,7 +28,7 @@ export function PlayButton() {
     <button
       onClick={onPlay}
       disabled={status !== "end"}
-      className="p-4 font-bold bg-accent-600 cursor-pointer hover:scale-110 transition-transform active:scale-100 disabled:hover:scale-100 disabled:bg-accent-800">
+      className="p-4 font-bold bg-accent-200 dark:bg-accent-600 cursor-pointer hover:scale-110 transition-transform active:scale-100 disabled:hover:scale-100 disabled:text-background-50  dark:disabled:text-background-800 disabled:bg-background-100 dark:disabled:bg-background-900">
       Play
     </button>
   )

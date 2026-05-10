@@ -3,7 +3,7 @@ import { WebSocketContext, type UserAPI } from "../context/WebsSocketsContext"
 import { CHAT_COLORS } from "../contants/chatColors"
 
 export function Leaderboard() {
-  const { subscribe, send } = useContext(WebSocketContext)
+  const { subscribe } = useContext(WebSocketContext)
   const [leaderboard, setLeaderboard] = useState<UserAPI[]>([])
 
   useEffect(() => {

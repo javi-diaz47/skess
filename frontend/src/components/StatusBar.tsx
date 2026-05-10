@@ -36,12 +36,21 @@ export function StatusBar() {
 
 
   return (
-    <section className="flex text-text-900 dark:text-text-50 justify-around items-center gap-8">
-      <Timer time={time} />
+    <section className="flex text-text-900 dark:text-text-50 justify-center items-center gap-8">
+      {
+        status?.sketcher && (
+          <p className="break-all flex items-center max-w-72 h-16 text-sm md:text-base bg-background-100 dark:bg-background-900 rounded-full py-4 px-8">
+            <span className={`mr-2 font-bold ${CHAT_COLORS[status?.sketcher?.color]}`}>
+              {status?.sketcher?.name}
+            </span>
+            is sketching!
+          </p>
+        )
+      }
 
       {
         status?.hint && (
-          <div className="flex justify-center gap-4 md:text-2xl font-bold bg-background-100 dark:bg-background-900 rounded-full py-4 px-8">
+          <div className="h-16 flex justify-center gap-4 md:text-2xl font-bold bg-background-100 dark:bg-background-900 rounded-full py-4 px-8">
             <p>
               {
                 status?.hint.split("").map((ch, i) => (
@@ -56,18 +65,7 @@ export function StatusBar() {
         )
       }
 
-      {
-        status?.sketcher && (
-          <p className="break-all max-w-72 text-sm md:text-base bg-background-100 dark:bg-background-900 rounded-full py-4 px-8">
-            <span className={`mr-2 font-bold ${CHAT_COLORS[status?.sketcher?.color]}`}>
-              {status?.sketcher?.name}
-            </span>
-            is sketching!
-          </p>
-        )
-      }
-
-
+      <Timer time={time} />
     </section>
   )
 }
