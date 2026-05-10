@@ -42,6 +42,8 @@ class Game:
         users: List[str],
         time_limits: GameTimeLimit = GameTimeLimit(),
         dictionary=WORDS,
+        on_end_game: Callable[[Game], Awaitable[None]] | None = None,
+        on_hint: Callable[[List[str], str, int], Awaitable[None]] | None = None,
     ) -> None:
         self._users: List[str] = users
 
@@ -58,6 +60,12 @@ class Game:
         self._time_limits: GameTimeLimit = time_limits
 
         self._dictionary = dictionary
+
+        self._on_end_game = on_end_game
+        self._on_hint = on_hint
+
+        self._task_on_end: asyncio.Task | None = None
+        self._task_on_hint: asyncio.Task | None = None
 
     @property
     def phase(self) -> GameState:
@@ -108,11 +116,6 @@ class Game:
         self._users.remove(id)
         self._leaderboard.remove_user(id)
 
-    async def on_end(self, func: Callable[[Game], Awaitable[None]]) -> None:
-        await asyncio.sleep(self._time_limits.guess)
-        self.end()
-        await func(self)
-
     def start(self) -> Tuple[str, List[str]] | None:
         if isinstance(self._phase, ActiveState):
             return None
@@ -141,6 +144,12 @@ class Game:
         self._words = []
         self._set_phase(Phase.GUESS)
         self._hint = self._hide_word()
+
+        if self._on_hint is not None:
+            self._task_on_hint = asyncio.create_task(self._schedule_hints())
+
+        self._task_on_end = asyncio.create_task(self._schedule_end())
+
         return True
 
     def guess(self, user_id: str, guess: str) -> LeaderboardScores | None:
@@ -159,51 +168,22 @@ class Game:
             and user_id != self._sketcher_id
         ):
             self._correct_guessers.add(user_id)
+
+            if len(self._correct_guessers) == len(self._users) - 1:
+                if self._task_on_hint is not None:
+                    self._task_on_hint.cancel()
+
+                if self._task_on_end is not None:
+                    self._task_on_end.cancel()
+
             return self._leaderboard.update_score(user_id, MAX_SCORE)
 
         return None
 
     def end(self) -> LeaderboardScores:
-        self._add_sketcher_score()
         self._reset_round()
         self._set_phase(Phase.END)
         return self._leaderboard.get_leaderboard()
-
-    async def schedule_hints(
-        self, func: Callable[[List[str], str, int], Awaitable[None]]
-    ) -> None:
-        third = self._time_limits.guess // 3
-
-        size = len(self._word)
-
-        hint = list(self._hint)
-        max_index = size - 1
-
-        letter_count = self.word_letter_count()
-
-        first_hint_index = random.randint(0, max_index)
-        while not self._word[first_hint_index].isalpha():
-            first_hint_index = random.randint(0, max_index)
-
-        hint[first_hint_index] = self._word[first_hint_index]
-
-        await asyncio.sleep(third)
-        self._hint = "".join(hint)
-        await func(self.pending_guessers(), self._hint, letter_count)
-
-        if self.word_letter_count() > 3:
-            second_hint_index = first_hint_index
-            while (
-                second_hint_index == first_hint_index
-                or not self._word[second_hint_index].isalpha()
-            ):
-                second_hint_index = random.randint(0, max_index)
-
-            hint[second_hint_index] = self._word[second_hint_index]
-
-            await asyncio.sleep(third)
-            self._hint = "".join(hint)
-            await func(self.pending_guessers(), self._hint, letter_count)
 
     def pending_guessers(self):
         return [
@@ -221,6 +201,55 @@ class Game:
 
     def is_idle(self) -> bool:
         return isinstance(self._phase, IdleState)
+
+    async def _schedule_end(self, wait=True) -> None:
+        if wait:
+            await asyncio.sleep(self._time_limits.guess)
+
+        self._add_sketcher_score()
+
+        if self._on_end_game is not None:
+            await self._on_end_game(self)
+
+        self.end()
+
+    async def _schedule_hints(self) -> None:
+        if self._on_hint is None:
+            return
+
+        third = self._time_limits.guess // 3
+
+        size = len(self._word)
+
+        hint = list(self._hint)
+        max_index = size - 1
+
+        letter_count = self.word_letter_count()
+
+        first_hint_index = random.randint(0, max_index)
+        while not self._word[first_hint_index].isalpha():
+            first_hint_index = random.randint(0, max_index)
+
+        hint[first_hint_index] = self._word[first_hint_index]
+
+        await asyncio.sleep(third)
+        self._hint = "".join(hint)
+
+        await self._on_hint(self.pending_guessers(), self._hint, letter_count)
+
+        if self.word_letter_count() > 3:
+            second_hint_index = first_hint_index
+            while (
+                second_hint_index == first_hint_index
+                or not self._word[second_hint_index].isalpha()
+            ):
+                second_hint_index = random.randint(0, max_index)
+
+            hint[second_hint_index] = self._word[second_hint_index]
+
+            await asyncio.sleep(third)
+            self._hint = "".join(hint)
+            await self._on_hint(self.pending_guessers(), self._hint, letter_count)
 
     def _set_phase(self, new_state: Phase) -> None:
         if new_state == Phase.CHOOSE or new_state == Phase.GUESS:
