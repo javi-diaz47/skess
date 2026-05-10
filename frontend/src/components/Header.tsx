@@ -6,8 +6,8 @@ export function Header() {
   const { session, onDeleteSession } = useContext(SessionContext)
 
   return (
-    <header className="bg-background-500 text-text-50 flex justify-between items-center py-4 px-12 rounded-full">
-      <h1 className="text-2xl font-bold bg-primary-500">Skess</h1>
+    <header className="text-text-900 dark:text-text-50 flex justify-between items-center py-4 px-12 rounded-full">
+      <h1 className="text-4xl font-bold">Skess</h1>
       <div className="group">
         <button
           onClick={onDeleteSession}

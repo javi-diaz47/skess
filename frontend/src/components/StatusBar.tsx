@@ -36,12 +36,12 @@ export function StatusBar() {
 
 
   return (
-    <section className="flex justify-around items-center gap-8">
+    <section className="flex text-text-900 dark:text-text-50 justify-around items-center gap-8">
       <Timer time={time} />
 
       {
         status?.hint && (
-          <div className="flex gap-4 text-2xl font-bold">
+          <div className="flex justify-center gap-4 md:text-2xl font-bold bg-background-100 dark:bg-background-900 rounded-full py-4 px-8">
             <p>
               {
                 status?.hint.split("").map((ch, i) => (
@@ -49,7 +49,7 @@ export function StatusBar() {
                 ))
               }
             </p>
-            <span className="self-end text-base">
+            <span className="self-end text-xs md:text-base">
               {status?.word_letter_count}
             </span>
           </div>
@@ -58,7 +58,7 @@ export function StatusBar() {
 
       {
         status?.sketcher && (
-          <p className="break-all">
+          <p className="break-all max-w-72 text-sm md:text-base bg-background-100 dark:bg-background-900 rounded-full py-4 px-8">
             <span className={`mr-2 font-bold ${CHAT_COLORS[status?.sketcher?.color]}`}>
               {status?.sketcher?.name}
             </span>
