@@ -276,13 +276,11 @@ class Game:
         if self._sketcher_id not in self._users:
             return None
 
-        score = 0
-
         total_guessers = len(self.users) - 1
+        av_score = sum(self._guessers_time) / total_guessers
+        correct_guessers_ratio = len(self._correct_guessers) / total_guessers
 
-        print(self._guessers_time)
-        for t in self._guessers_time:
-            score += t / total_guessers
+        score = av_score * correct_guessers_ratio * 0.8
 
         print("sketcher score ", score)
 
