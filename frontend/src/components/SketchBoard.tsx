@@ -19,7 +19,7 @@ export function SketchBoard() {
       <div className="relative w-full min-w-sm h-full">
         <canvas
           ref={canvas}
-          className="w-full h-full bg-background-100 dark:bg-background-900 rounded-2xl"
+          className="w-full h-full bg-background-100 dark:bg-background-800 rounded-2xl"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
@@ -31,7 +31,7 @@ export function SketchBoard() {
           </g>
         </svg>
       </div>
-      <div className="flex absolute bottom-5 gap-2 mt-2 px-4 py-2 bg-background-200 dark:bg-background-800 rounded-2xl w-fit shadow-2xl shadow-background-200 dark:shadow-background-900">
+      <div className="flex absolute bottom-5 gap-2 mt-2 px-4 py-2 bg-background-200 dark:bg-background-900 rounded-2xl w-fit shadow-2xl shadow-background-200 dark:shadow-background-900">
         {Object.entries(SKETCH_COLORS).map(([name, value]) => {
           const c = value.base;
 

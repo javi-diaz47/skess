@@ -40,7 +40,7 @@ export function Chat() {
         {
           messages && messages.map(item => (
             item.payload.correct ? (
-              <li className="bg-green-950">
+              <li className="bg-green-100 dark:bg-green-900 rounded-xl p-1">
                 <p className="break-all">
                   <span className={`mr-2 font-bold ${CHAT_COLORS[item.user.color]}`}>
                     {item.user.name}:
@@ -49,10 +49,10 @@ export function Chat() {
                 </p>
               </li>
             ) : (
-              <li key={item.event_id} className={`${item.payload.correct === true ? "bg-green-700" : ""}`}>
+              <li key={item.event_id}>
                 <p className="break-all">
                   <span className={`mr-2 font-bold ${CHAT_COLORS[item.user.color]}`}>
-                    {item.user.id === session.id ? 'You' : item.user.name}:
+                    {item.user.name}{item.user.id === session.id ? <span className="text-sm"> (you)</span> : ""}:
                   </span>
                   {item.payload.message}
                 </p>
@@ -63,6 +63,7 @@ export function Chat() {
       </ul>
 
       <form onSubmit={onSubmit} className="flex items-center justify-between gap-2 mt-4">
+
         <div className="min-w-0 flex-1 flex items-center justify-around bg-background-100 dark:bg-background-900 text-text-800 dark:text-text-100 rounded-full p-4">
           <input
             value={input}
