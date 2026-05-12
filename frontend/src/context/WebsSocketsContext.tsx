@@ -20,7 +20,12 @@ type CreateSocketEvent<SocketEvent> = Omit<SocketEvent, "event_id" | "user" | "t
 export type GuessSocketEvent = BaseSocketEvent<"guess", { message: string, correct: boolean }>
 export type CreateGuessSocketEvent = CreateSocketEvent<GuessSocketEvent>
 
-export type SketchSocketEvent = BaseSocketEvent<"sketch", { path: string, color: string, sketching: boolean }>
+export interface Path {
+  points: number[][],
+  color: string
+}
+
+export type SketchSocketEvent = BaseSocketEvent<"sketch", { path: Path, sketching: boolean }>
 export type CreateSketchSocketEvent = CreateSocketEvent<SketchSocketEvent>
 
 export type ChooseSocketEvent = BaseSocketEvent<"choose_options", { words: string[] }>
@@ -100,6 +105,7 @@ export const WebSocketProvider = ({ children }) => {
 
   const send = (data: any) => {
     if (ws.current === null) return;
+    console.log(JSON.stringify(data))
     ws.current.send(JSON.stringify(data))
   }
 

@@ -1,14 +1,9 @@
 import { useContext, useEffect, useRef, useState, type PointerEvent } from "react"
-import { WebSocketContext } from "../context/WebsSocketsContext"
+import { WebSocketContext, type Path } from "../context/WebsSocketsContext"
 import { getSvgPathFromStroke } from "../utils/getSvgPathFromStroke";
 import getStroke from "perfect-freehand";
 import { STROKE_OPTIONS } from "../contants/strokeOptions";
 import { SKETCH_COLORS } from "../contants/sketchColors";
-
-interface Path {
-  path: Path2D,
-  color: string
-}
 
 
 export const useSketch = () => {
@@ -40,15 +35,20 @@ export const useSketch = () => {
 
     if (!canvas.current) return;
 
-    const newPath = new Path2D(lastPath.current)
-    setPaths(prev => [...prev, { path: newPath, color }])
+    //const newPath = new Path2D(lastPath.current)
+
+    const newPath: Path = {
+      points: normalizePoints(points.current),
+      color
+    }
+
+    setPaths(prev => [...prev, newPath])
 
     send({
       type: "sketch",
       payload: {
-        color,
         sketching: false,
-        path: lastPath.current
+        path: newPath
       }
     })
 
@@ -63,24 +63,31 @@ export const useSketch = () => {
     if (!isPointerDown.current) return;
 
     const rect = canvas.current.getBoundingClientRect()
-    points.current.push([ev.clientX - rect.left, ev.clientY - rect.top])
+    points.current.push([(ev.clientX - rect.left), ev.clientY - rect.top])
 
     const outlinePoints = getStroke(points.current, STROKE_OPTIONS)
     const pathData = getSvgPathFromStroke(outlinePoints)
 
     lastPath.current = pathData
 
+    svgPath.current.setAttribute("fill", color)
+    svgPath.current?.setAttribute("d", pathData)
+
+    const normalizePoints = points.current.map(coor => [coor[0] / rect.width, coor[1] / rect.height])
+
+    const sketchingPath: Path = {
+      points: normalizePoints,
+      color
+    }
+
     send({
       type: "sketch",
       payload: {
-        color,
         sketching: true,
-        path: lastPath.current
+        path: sketchingPath
       }
     })
 
-    svgPath.current.setAttribute("fill", color)
-    svgPath.current?.setAttribute("d", pathData)
 
   }
 
@@ -88,13 +95,34 @@ export const useSketch = () => {
     const ctx = canvas.current.getContext('2d')
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
 
+
     paths.forEach(cur => {
       ctx.beginPath()
       ctx.fillStyle = cur.color
-      ctx.fill(cur.path)
+
+      const pathData = createSvgPath(cur.points)
+      const path = new Path2D(pathData)
+
+      ctx.fill(path)
       ctx.closePath()
     })
 
+  }
+
+  const scalePoints = (points: number[][]): number[][] => {
+    const rect = canvas.current.getBoundingClientRect()
+    return points.map(coor => [coor[0] * rect.width, coor[1] * rect.height])
+  }
+
+  const normalizePoints = (points: number[][]): number[][] => {
+    const rect = canvas.current.getBoundingClientRect()
+    return points.map(coor => [coor[0] / rect.width, coor[1] / rect.height])
+  }
+
+  const createSvgPath = (points: number[][]): string => {
+    const scaledPoints = scalePoints(points)
+    const outlinePoints = getStroke(scaledPoints, STROKE_OPTIONS)
+    return getSvgPathFromStroke(outlinePoints)
   }
 
 
@@ -110,16 +138,18 @@ export const useSketch = () => {
 
     canvas.current.getContext('2d').scale(dpr, dpr);
 
-    const unsubGuess = subscribe("sketch", (data) => {
+    const unsubSketch = subscribe("sketch", (data) => {
+      console.log("received", data.payload)
 
       if (data.payload.sketching) {
         // sketching
-        svgPath.current.setAttribute("fill", data.payload.color)
-        svgPath.current?.setAttribute("d", data.payload.path)
+        const path = createSvgPath(data.payload.path.points)
+        svgPath.current.setAttribute("fill", data.payload.path.color)
+        svgPath.current?.setAttribute("d", path)
 
       } else {
         // end sketch
-        setPaths(prev => [...prev, { path: new Path2D(data.payload.path), color: data.payload.color }])
+        setPaths(prev => [...prev, data.payload.path])
       }
 
     })
@@ -131,7 +161,7 @@ export const useSketch = () => {
     })
 
     return () => {
-      unsubGuess()
+      unsubSketch()
       unsubStatus()
     }
 
