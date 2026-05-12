@@ -53,12 +53,6 @@ def validate_payload(data: dict):
                 "message": "Payload must include a property path of type string",
             }
 
-        if "color" not in data["payload"]:
-            return {
-                "error": "Invalid Message",
-                "message": "Payload must include a string property color representing the path’s hexadecimal color.",
-            }
-
         if "sketching" not in data["payload"]:
             return {
                 "error": "Invalid Message",

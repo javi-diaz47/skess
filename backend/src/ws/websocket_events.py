@@ -27,9 +27,13 @@ class GuessEvent(BaseSocketEvent):
     payload: PayloadGuess
 
 
-class SketchPayload(BaseModel):
-    path: str
+class SketchPath(BaseModel):
+    points: List[List[float]]
     color: str
+
+
+class SketchPayload(BaseModel):
+    path: SketchPath
     sketching: bool
 
 
