@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Dict, List
 from fastapi import WebSocket
 
@@ -14,13 +15,11 @@ class User:
         self.color = color
 
 
+@dataclass
 class Connection:
-    user: User
     ws: WebSocket
-
-    def __init__(self, user: User, ws: WebSocket):
-        self.user = user
-        self.ws = ws
+    user: User
+    room_id: str
 
 
 class ConnectionManager:
