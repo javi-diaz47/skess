@@ -1,7 +1,7 @@
 from typing import Dict, List
 from uuid import uuid4
 import uuid
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from src.game.engine import Game, GameTimeLimit, Phase
 from dataclasses import dataclass
@@ -98,6 +98,9 @@ async def send_hint(
     await manager.multicast(pending_guessers_id, ev.model_dump())
 
 
+ROOM_NUMBER = 2
+MAX_ROOMS = 2
+
 MAX_ROOM_CAPACITY = 2
 
 
@@ -110,8 +113,11 @@ class Room:
 
 class GameRooms:
     rooms: Dict[str, Room] = {}
+    _max_rooms: int
 
-    def __init__(self, room_number: int) -> None:
+    def __init__(self, room_number: int, max_rooms: int = 0) -> None:
+        self._max_rooms = max(max_rooms, room_number)
+
         for i in range(room_number):
             room_id = f"room-{i}"
 
@@ -130,25 +136,72 @@ class GameRooms:
 
             self.rooms[room_id] = newRoom
 
-    def get_available_room(self) -> str | None:
+    def is_available(self, room_id):
+        if room_id not in self.rooms:
+            return False
+
+        if len(self.rooms[room_id].game.users) >= self.rooms[room_id].capacity:
+            return False
+
+        return True
+
+    def get_available_room(self, room_code: str | None) -> str | None:
         room_id: str | None = None
 
-        for r_id in self.rooms:
-            if len(self.rooms[r_id].game.users) < self.rooms[r_id].capacity:
-                room_id = r_id
-                break
+        if room_code is None:
+            for r_id in self.rooms:
+                if self.is_available(r_id):
+                    room_id = r_id
+                    break
+        else:
+            if self.is_available(room_code):
+                room_id = room_code
 
         return room_id
 
+    def add_room(
+        self, capacity, choose_time_limit: int, guess_time_limit: int
+    ) -> str | bool:
+        if len(self.rooms) < self._max_rooms:
+            room_id = str(uuid.uuid4())
 
-gameRooms = GameRooms(2)
+            self.rooms[room_id] = Room(
+                id=room_id,
+                capacity=capacity,
+                game=Game(
+                    users=[],
+                    time_limits=GameTimeLimit(
+                        choose=choose_time_limit, guess=guess_time_limit
+                    ),
+                    on_end_game=end_game,
+                    on_hint=send_hint,
+                ),
+            )
+
+            return room_id
+
+        return False
+
+    def remove_room(self, room_id) -> None:
+        if room_id in self.rooms:
+            self.rooms.pop(room_id)
+
+
+gameRooms = GameRooms(ROOM_NUMBER, MAX_ROOMS)
 
 
 @app.websocket("/ws/{client_id}/{client_name}")
-async def websocket_endpoint(ws: WebSocket, client_id: str, client_name: str):
-    room_id = gameRooms.get_available_room()
+async def websocket_endpoint(
+    ws: WebSocket,
+    client_id: str,
+    client_name: str,
+    room_id: str | None = Query(default=None),
+):
+    room_id = gameRooms.get_available_room(room_id)
 
+    print("room_id: ", room_id)
     if room_id is None:
+        print(room_id, "not available")
         await ws.close(code=1008, reason="No room available")
         return
 
