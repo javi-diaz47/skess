@@ -113,8 +113,8 @@ export const WebSocketProvider = ({ children }) => {
 
     if (!hasSession() || ws.current !== null) return;
 
-    const URI = "ws://127.0.0.1:8000/ws"
-    ws.current = new WebSocket(`${URI}/${session.id}/${session.name}`)
+    const URI = "ws://192.168.1.23:8000/ws"
+    ws.current = new WebSocket(`${URI}/${session.id}/${session.name}?room_id=${session.room_id}`)
 
     ws.current.addEventListener("message", onMessage)
     ws.current.addEventListener("close", onClose)
