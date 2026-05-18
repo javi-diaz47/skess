@@ -145,10 +145,11 @@ class GameRooms:
 
         return True
 
-    def get_available_room(self, room_code: str | None) -> str | None:
+    def get_available_room(self, room_code: str) -> str | None:
         room_id: str | None = None
 
-        if room_code is None:
+        print(room_code, room_code is None)
+        if not len(room_code):
             for r_id in self.rooms:
                 if self.is_available(r_id):
                     room_id = r_id
@@ -192,25 +193,20 @@ gameRooms = GameRooms(ROOM_NUMBER, MAX_ROOMS)
 
 @app.websocket("/ws/{client_id}/{client_name}")
 async def websocket_endpoint(
-    ws: WebSocket,
-    client_id: str,
-    client_name: str,
-    room_id: str | None = Query(default=None),
+    ws: WebSocket, client_id: str, client_name: str, room_id: str = ""
 ):
-    room_id = gameRooms.get_available_room(room_id)
+    _room_id = gameRooms.get_available_room(room_id)
 
-    print("room_id: ", room_id)
-    if room_id is None:
-        print(room_id, "not available")
+    if _room_id is None:
         await ws.close(code=1008, reason="No room available")
         return
 
     conn = Connection(
-        ws, User(client_id, client_name, random.choice(COLORS)), room_id=room_id
+        ws, User(client_id, client_name, random.choice(COLORS)), room_id=_room_id
     )
     await manager.connect(conn)
 
-    game = gameRooms.rooms[room_id].game
+    game = gameRooms.rooms[_room_id].game
 
     if conn.user.id not in game.users:
         game.add_user(conn.user.id)
