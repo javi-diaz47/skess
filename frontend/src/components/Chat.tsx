@@ -1,4 +1,4 @@
-import { useContext, useState, type SubmitEvent } from "react";
+import { useContext, useEffect, useRef, useState, type SubmitEvent } from "react";
 import { SessionContext } from "../context/SessionContext";
 import { CHAT_COLORS } from "../contants/chatColors";
 import { useChat } from "../hooks/useChat";
@@ -9,83 +9,50 @@ import { useChat } from "../hooks/useChat";
 export function Chat() {
 
   const { session } = useContext(SessionContext)
-  const { messages, sendMessage } = useChat()
-
-  const [input, setInput] = useState("")
-
-  const onSubmit = (ev: SubmitEvent<HTMLFormElement>) => {
-    ev.preventDefault()
-
-    if (input.length === 0) return;
-
-    sendMessage(input)
-
-    setInput("")
-  }
-
-  const countAlpha = (word: string): number => {
-    let counter = 0
-    for (let i = 0; i < word.length; i++) {
-      const code = word.charCodeAt(i)
-      console.log("z".codePointAt(0))
-      if (code > 64 && code < 90 || code > 96 && code < 123) counter++
-    }
-    return counter
-  }
+  const { messages } = useChat()
 
   return (
-    <div className="flex flex-col h-full">
-      <h2 className="shrink-0 text-2xl font-bold">Chat</h2>
-      <ul className="flex-1 min-h-48 h-full bg-background-100 dark:bg-background-900 overflow-y-scroll p-2 rounded-2xl">
-        {
-          messages && messages.map(item => (
-            item.payload.correct ? (
-              <li className="bg-green-100 dark:bg-green-900 rounded-xl p-1">
-                <p className="break-all">
-                  <span className={`mr-2 font-bold ${CHAT_COLORS[item.user.color]}`}>
-                    {item.user.name}:
-                  </span>
-                  guessed correctly
-                </p>
-              </li>
-            ) : (
-              <li key={item.event_id}>
-                <p className="break-all">
-                  <span className={`mr-2 font-bold ${CHAT_COLORS[item.user.color]}`}>
-                    {item.user.name}{item.user.id === session.id ? <span className="text-sm"> (you)</span> : ""}:
-                  </span>
-                  {item.payload.message}
-                </p>
-              </li>
-            )
-          ))
-        }
-      </ul>
 
-      <form onSubmit={onSubmit} className="flex items-center justify-between gap-2 mt-4">
+    <div className="h-full min-h-0 flex">
+      <div className="w-full bg-background-100 dark:bg-background-900 overflow-y-scroll p-2 rounded-2xl">
 
-        <div className="min-w-0 flex-1 flex items-center justify-around bg-background-100 dark:bg-background-900 text-text-800 dark:text-text-100 rounded-full p-4">
-          <input
-            value={input}
-            onChange={(ev) => setInput(ev.target.value)}
-            maxLength={40}
-            name="guess"
-            type="text"
-            placeholder="Type your guess..."
-            className="min-w-0 flex-1 dark:text-text-50 dark:placeholder:text-text-300 outline-none"
-          />
-          {
-            input.length === 0 ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="icon icon-tabler icons-tabler-filled icon-tabler-keyboard"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M20 5a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-16a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3zm-14 8a1 1 0 0 0 -1 1v.01a1 1 0 0 0 2 0v-.01a1 1 0 0 0 -1 -1m12 0a1 1 0 0 0 -1 1v.01a1 1 0 0 0 2 0v-.01a1 1 0 0 0 -1 -1m-7.998 0a1 1 0 0 0 -.004 2l4 .01a1 1 0 0 0 .005 -2zm-4.002 -4a1 1 0 0 0 -1 1v.01a1 1 0 0 0 2 0v-.01a1 1 0 0 0 -1 -1m4 0a1 1 0 0 0 -1 1v.01a1 1 0 0 0 2 0v-.01a1 1 0 0 0 -1 -1m4 0a1 1 0 0 0 -1 1v.01a1 1 0 0 0 2 0v-.01a1 1 0 0 0 -1 -1m4 0a1 1 0 0 0 -1 1v.01a1 1 0 0 0 2 0v-.01a1 1 0 0 0 -1 -1" /></svg>
-            ) : (
-              <span className="w-6 h-6 font-bold">{countAlpha(input)}</span>
-            )
-          }
+        <div className="flex items-center gap-2">
+          <svg className="w-5 aspect-square text-text-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <path d="M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+            <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            <path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
+          </svg>
+          <h2 className="md:text-2xl font-bold text-text-400 dark:text-text-200">Chat</h2>
         </div>
-        <button className="shrink-0 bg-primary-500 dark:bg-primary-700 p-4 rounded-full text-text-50 hover:scale-110 active:scale-100 duration-150">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="icon icon-tabler icons-tabler-filled icon-tabler-send"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M21.864 3.549l-6.454 17.868a1.55 1.55 0 0 1 -1.41 .903a1.54 1.54 0 0 1 -1.394 -.874l-2.88 -5.759zm-1.414 -1.414l-12.139 12.138l-5.728 -2.864a1.55 1.55 0 0 1 -.903 -1.409c0 -.606 .353 -1.157 .981 -1.44z" /></svg>
-        </button>
-      </form>
+
+        <ul className="text-sm md:text-base">
+          {
+            messages && messages.map(item => (
+              item.payload.correct ? (
+                <li key={item.event_id} className="bg-green-100 dark:bg-green-900 rounded-xl p-1">
+                  <p className="break-all">
+                    <span className={`mr-2 font-bold ${CHAT_COLORS[item.user.color]}`}>
+                      {item.user.name}:
+                    </span>
+                    guessed correctly
+                  </p>
+                </li>
+              ) : (
+                <li key={item.event_id} className="">
+                  <p className="break-all">
+                    <span className={`mr-2 font-bold ${CHAT_COLORS[item.user.color]}`}>
+                      {item.user.name}{item.user.id === session.id ? <span className="text-[10px] md:text-xs"> (you)</span> : ""}:
+                    </span>
+                    {item.payload.message}
+                  </p>
+                </li>
+              )
+            ))
+          }
+        </ul>
+      </div>
 
     </div>
   )

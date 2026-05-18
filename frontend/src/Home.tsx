@@ -5,41 +5,45 @@ import { WordSelector } from "./components/WordSelector";
 import { PlayButton } from "./components/PlayButtton";
 import { Header } from "./components/Header";
 import { StatusBar } from "./components/StatusBar";
+import { ChatInput } from "./components/ChatInput";
 
 export function Home() {
 
   return (
-    <div className="flex justify-center">
-      <main className="flex flex-col w-full max-w-7xl bg-background-50 text-text-900 dark:bg-background-950 dark:text-text-50 p-4">
-        <div className="shrink-0">
-          <Header />
+    <main className="w-full max-w-7xl grid p-2
+      grid-cols-2 grid-rows-[auto_auto_1fr_minmax(0,1fr)_auto] gap-2
+      md:grid-rows-[3rem_4rem_3fr_2fr_auto] md:grid-cols-[1fr_1fr] md:gap-4 md:p-4
+      lg:max-h-3/4 lg:grid-rows-[3rem_4rem_1fr_1fr_auto] lg:grid-cols-[3fr_1fr] lg:gap-6
+    ">
+
+      <section className="col-span-2">
+        <Header />
+      </section>
+
+      <section className="col-span-2">
+        <StatusBar />
+      </section>
+
+      <section className="relative col-span-2 md:row-span-1 md:col-span-2 lg:row-span-3 lg:col-span-1">
+        <SketchBoard />
+        <div className="absolute left-1/2 top-1/2 -translate-1/2">
+          <WordSelector />
         </div>
-        <section className="flex-1 flex flex-col gap-6">
-          <div className="shrink-0">
-            <StatusBar />
-          </div>
+      </section>
 
-          <div className="flex-1 grid grid-rows-3 md:grid-rows-[1fr_auto_auto] md:grid-cols-2 lg:grid-cols-7 lg:grid-rows-2 gap-4">
-            <div className="md:col-span-2 lg:col-span-5 lg:row-span-2 relative">
-              <SketchBoard />
-              <div className="absolute left-1/2 top-1/2 -translate-1/2">
-                <WordSelector />
-              </div>
-            </div>
+      <section className="lg:col-start-2">
+        <Leaderboard />
+      </section>
 
-            <div className="lg:col-span-2">
-              <Chat />
-            </div>
+      <section className="min-h-0">
+        <Chat />
+      </section>
 
-            <div className="lg:col-span-2">
-              <Leaderboard />
-            </div>
+      <section className="col-span-2 lg:col-span-1">
+        <ChatInput />
+      </section>
 
-            <PlayButton />
-          </div>
+    </main>
 
-        </section>
-      </main>
-    </div>
   )
 }

@@ -69,3 +69,27 @@ canvas {
   -webkit-user-select: none;
   user-select: none;
 }
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary-200);
+  border-radius: 9999px;
+}
+
+html[data-theme="dark"]  ::-webkit-scrollbar-thumb {
+  background: var(--color-primary-700);
+  border-radius: 9999px;
+}
+
