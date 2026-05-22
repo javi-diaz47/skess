@@ -3,11 +3,16 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Awaitable, Callable, List, Literal, Set, Tuple, Union
 from pydantic import BaseModel
-from src.game.contants import MAX_SCORE, WORDS
+from src.game.contants import (
+    MAX_HINTS,
+    MAX_PLAYERS,
+    MAX_ROUNDS,
+    MAX_SCORE,
+    WORDS,
+)
 from src.game.leaderboard import Leaderboard, LeaderboardScores
 import datetime as dt
 import random
-import math
 
 
 @dataclass
@@ -42,6 +47,7 @@ class Game:
         users: List[str],
         time_limits: GameTimeLimit = GameTimeLimit(),
         max_score: int = MAX_SCORE,
+        max_rounds: int = MAX_ROUNDS,
         dictionary=WORDS,
         on_end_game: Callable[[Game], Awaitable[None]] | None = None,
         on_hint: Callable[[List[str], str, int], Awaitable[None]] | None = None,
@@ -69,6 +75,32 @@ class Game:
 
         self._task_on_end: asyncio.Task | None = None
         self._task_on_hint: asyncio.Task | None = None
+
+        self._current_turn: int = 0
+        self._max_turns: int = len(self._users)
+
+        self._current_round: int = 0
+        self._max_rounds: int = max(self._current_round, max_rounds)
+
+        self._round_end: bool = True
+
+        self._players_who_sketched: Set[str] = set()
+
+    @property
+    def current_turn(self) -> int:
+        return self._current_turn
+
+    @property
+    def current_round(self) -> int:
+        return self._current_round
+
+    @property
+    def max_turns(self) -> int:
+        return self._max_turns
+
+    @property
+    def max_rounds(self) -> int:
+        return self._max_rounds
 
     @property
     def phase(self) -> GameState:
@@ -114,10 +146,12 @@ class Game:
     def add_user(self, user_id) -> None:
         self._users.append(user_id)
         self._leaderboard.add_user(user_id)
+        self._max_turns = len(self._users)
 
     def remove_user(self, id) -> None:
         self._users.remove(id)
         self._leaderboard.remove_user(id)
+        self._max_turns = len(self._users)
 
     def start(self) -> Tuple[str, List[str]] | None:
         if isinstance(self._phase, ActiveState):
@@ -134,8 +168,14 @@ class Game:
         self._set_phase(Phase.CHOOSE)
 
         self._words = random.choices(self._dictionary, k=3)
-
         self._sketcher_id = self._users[self._sketcher_index]
+
+        self._current_turn += 1
+        self._players_who_sketched.add(self._sketcher_id)
+
+        if self._round_end:
+            self._current_round += 1
+            self._round_end = False
 
         return (self._sketcher_id, self._words.copy())
 
@@ -282,8 +322,6 @@ class Game:
 
         score = av_score * correct_guessers_ratio * 0.8
 
-        print("sketcher score ", score)
-
         self._leaderboard.update_score(self._sketcher_id, round(score))
 
     def _reset_round(self) -> None:
@@ -292,6 +330,19 @@ class Game:
         self._hint = ""
         self._sketcher_id = ""
         self._correct_guessers = set()
+
+        if self._current_turn >= self._max_turns:
+            self._current_turn = 0
+
+            if 0 < self._current_round < self._max_rounds:
+                self._current_round += 1
+                #   Emit new Round Event
+                return
+
+            if self._current_round == self._max_rounds:
+                self._current_round = 0
+                self._players_who_sketched = set()
+                self._round_end = True
 
     def _now(self) -> dt.datetime:
         return dt.datetime.now(tz=dt.UTC)
