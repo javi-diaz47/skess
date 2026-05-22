@@ -1,7 +1,7 @@
 import asyncio
 from typing import List, Tuple
 import pytest
-from src.game.contants import MAX_SCORE
+from src.game.contants import MAX_ROUNDS, MAX_SCORE
 from src.game.engine import Game, GameTimeLimit, IdleState, ActiveState
 from time import sleep
 import math
@@ -533,3 +533,75 @@ async def test_hidden_word():
     game.choose(words[0])
 
     assert game.hint == "___-____ ____"
+
+
+@pytest.mark.asyncio
+async def test_rounds():
+    users = ["a", "b"]
+    words = ["ada"]
+
+    max_rounds = 3
+    game = Game(
+        users,
+        time_limits=GameTimeLimit(choose=0, guess=0),
+        dictionary=words,
+        max_rounds=max_rounds,
+    )
+
+    expected_round = 0
+
+    for turn in range(10):
+        game.start()
+
+        expected_turn = (turn % len(users)) + 1
+        if turn % len(users) == 0:
+            if expected_round == max_rounds:
+                expected_round = 0
+            expected_round += 1
+
+        assert game.current_turn == expected_turn
+        assert game.current_round == expected_round
+
+        game.choose(words[0])
+        game.end()
+
+
+@pytest.mark.asyncio
+async def test_rounds_max_turn_change_after_user_disconnect():
+    users = ["a", "b", "c"]
+    words = ["ada"]
+
+    max_rounds = 3
+    game = Game(
+        users=users.copy(),
+        time_limits=GameTimeLimit(choose=0, guess=0),
+        dictionary=words,
+        max_rounds=max_rounds,
+    )
+
+    expected_round = 0
+
+    turn = 0
+    removed_user = False
+    while turn < 10:
+        game.start()
+
+        expected_turn = (turn % len(users)) + 1
+        if turn % len(users) == 0:
+            if expected_round == max_rounds:
+                expected_round = 0
+            expected_round += 1
+
+        assert game.current_turn == expected_turn
+        assert game.current_round == expected_round
+
+        game.choose(words[0])
+        if turn == 4 and not removed_user:
+            game.remove_user("c")
+            users.pop()
+            print("len", users)
+            removed_user = True
+            turn = -1
+
+        game.end()
+        turn += 1
