@@ -44,13 +44,13 @@ class ConnectionManager:
         if to_delete.ws == conn.ws:
             self.active_conns.pop(to_delete.user.id)
 
-    async def send_message(self, id: str, data):
-        if id in self.active_conns:
-            conn = self.active_conns[id]
+    async def send_message(self, user_id: str, data):
+        if user_id in self.active_conns:
+            conn = self.active_conns[user_id]
             await conn.ws.send_json(data)
 
-    async def send_personal_message(self, conn: Connection, data):
-        await conn.ws.send_json(data)
+    async def send_personal_message(self, user_id: str, data):
+        await self.active_conns[user_id].ws.send_json(data)
 
     async def broadcast(self, data: Dict):
         for id in self.active_conns:
