@@ -6,7 +6,7 @@ class UserWebSocket(BaseModel):
     id: str
     name: str
     color: str
-    score: int
+    score: int = 0
 
 
 class BaseSocketEvent(BaseModel):
@@ -15,6 +15,10 @@ class BaseSocketEvent(BaseModel):
     timestamp: float | None = None
     game_guess_limit: int | None = None
     game_choose_limit: int | None = None
+    game_round: int | None = None
+    game_max_round: int | None = None
+    game_turn: int | None = None
+    game_max_turn: int | None = None
 
 
 class PayloadGuess(BaseModel):
