@@ -39,7 +39,7 @@ export function StatusBar() {
     <section className="flex text-sm md:text-base text-text-900 dark:text-text-50 justify-between md:justify-center items-center gap-2 md:gap-8">
 
       <div className="min-w-19 md:h-16 flex gap-2 justify-center items-center text-sm md:text-base font-bold bg-background-100 dark:bg-background-900 rounded-full py-2 md:py-4 px-4 md:px-8">
-        <p>1/10</p>
+        <p>{status?.game_round || 0}/{status?.game_max_round || 0}</p>
         <p className="hidden md:block">Rounds</p>
       </div>
 

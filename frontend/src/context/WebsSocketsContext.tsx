@@ -11,8 +11,13 @@ type BaseSocketEvent<T, U> = {
   type: T
   payload: U
   user: UserSession
-  timestamp: number | null
+  timestamp: number | null,
   game_guess_limit: number | null
+  game_round?: number | null,
+  game_max_round?: number | null,
+  game_turn?: number | null,
+  game_max_turn?: number | null
+
 }
 
 type CreateSocketEvent<SocketEvent> = Omit<SocketEvent, "event_id" | "user" | "timestamp" | "game_guess_limit">
@@ -31,7 +36,7 @@ export type CreateSketchSocketEvent = CreateSocketEvent<SketchSocketEvent>
 export type ChooseSocketEvent = BaseSocketEvent<"choose_options", { words: string[] }>
 export type CreateChooseSelectionSocketEvent = CreateSocketEvent<BaseSocketEvent<"choose_selection", { word: string }>>
 
-export type StatusSocketEvent = BaseSocketEvent<"status", { status: "start" | "guess" | "end" | "hint", sketcher: UserSession, guess_word: string, hint: string, word_letter_count: number }>
+export type StatusSocketEvent = BaseSocketEvent<"status", { status: "start" | "guess" | "end" | "hint", sketcher: UserSession, guess_word: string, hint: string, word_letter_count: number, }>
 export type CreateStartSocketEvent = CreateSocketEvent<BaseSocketEvent<"status", { status: "start" }>>
 
 export interface UserAPI {
