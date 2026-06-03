@@ -11,8 +11,13 @@ type BaseSocketEvent<T, U> = {
   type: T
   payload: U
   user: UserSession
-  timestamp: number | null
+  timestamp: number | null,
   game_guess_limit: number | null
+  game_round?: number | null,
+  game_max_round?: number | null,
+  game_turn?: number | null,
+  game_max_turn?: number | null
+
 }
 
 type CreateSocketEvent<SocketEvent> = Omit<SocketEvent, "event_id" | "user" | "timestamp" | "game_guess_limit">
@@ -20,13 +25,18 @@ type CreateSocketEvent<SocketEvent> = Omit<SocketEvent, "event_id" | "user" | "t
 export type GuessSocketEvent = BaseSocketEvent<"guess", { message: string, correct: boolean }>
 export type CreateGuessSocketEvent = CreateSocketEvent<GuessSocketEvent>
 
-export type SketchSocketEvent = BaseSocketEvent<"sketch", { path: string, color: string, sketching: boolean }>
+export interface Path {
+  points: number[][],
+  color: string
+}
+
+export type SketchSocketEvent = BaseSocketEvent<"sketch", { path: Path, sketching: boolean }>
 export type CreateSketchSocketEvent = CreateSocketEvent<SketchSocketEvent>
 
 export type ChooseSocketEvent = BaseSocketEvent<"choose_options", { words: string[] }>
 export type CreateChooseSelectionSocketEvent = CreateSocketEvent<BaseSocketEvent<"choose_selection", { word: string }>>
 
-export type StatusSocketEvent = BaseSocketEvent<"status", { status: "start" | "guess" | "end" }>
+export type StatusSocketEvent = BaseSocketEvent<"status", { status: "start" | "guess" | "end" | "hint", sketcher: UserSession, guess_word: string, hint: string, word_letter_count: number, }>
 export type CreateStartSocketEvent = CreateSocketEvent<BaseSocketEvent<"status", { status: "start" }>>
 
 export interface UserAPI {
@@ -100,6 +110,7 @@ export const WebSocketProvider = ({ children }) => {
 
   const send = (data: any) => {
     if (ws.current === null) return;
+    console.log(JSON.stringify(data))
     ws.current.send(JSON.stringify(data))
   }
 
@@ -107,8 +118,8 @@ export const WebSocketProvider = ({ children }) => {
 
     if (!hasSession() || ws.current !== null) return;
 
-    const URI = "ws://127.0.0.1:8000/ws"
-    ws.current = new WebSocket(`${URI}/${session.id}/${session.name}`)
+    const URI = "ws://192.168.1.23:8000/ws"
+    ws.current = new WebSocket(`${URI}/${session.id}/${session.name}?room_id=${session.room_id}`)
 
     ws.current.addEventListener("message", onMessage)
     ws.current.addEventListener("close", onClose)

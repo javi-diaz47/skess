@@ -6,7 +6,7 @@ class UserWebSocket(BaseModel):
     id: str
     name: str
     color: str
-    score: int
+    score: int = 0
 
 
 class BaseSocketEvent(BaseModel):
@@ -15,6 +15,10 @@ class BaseSocketEvent(BaseModel):
     timestamp: float | None = None
     game_guess_limit: int | None = None
     game_choose_limit: int | None = None
+    game_round: int | None = None
+    game_max_round: int | None = None
+    game_turn: int | None = None
+    game_max_turn: int | None = None
 
 
 class PayloadGuess(BaseModel):
@@ -27,9 +31,13 @@ class GuessEvent(BaseSocketEvent):
     payload: PayloadGuess
 
 
-class SketchPayload(BaseModel):
-    path: str
+class SketchPath(BaseModel):
+    points: List[List[float]]
     color: str
+
+
+class SketchPayload(BaseModel):
+    path: SketchPath
     sketching: bool
 
 
@@ -66,7 +74,11 @@ class LeaderboardEvent(BaseSocketEvent):
 
 
 class PayloadStatusEvent(BaseModel):
-    status: Literal["start", "guess", "end"]
+    status: Literal["start", "guess", "end", "hint"]
+    sketcher: UserWebSocket | None = None
+    guess_word: str | None = None
+    word_letter_count: int | None = None
+    hint: str | None = None
 
 
 class StatusEvent(BaseSocketEvent):

@@ -1,4 +1,5 @@
-from typing import Dict
+from dataclasses import dataclass
+from typing import Dict, List
 from fastapi import WebSocket
 
 
@@ -14,13 +15,11 @@ class User:
         self.color = color
 
 
+@dataclass
 class Connection:
-    user: User
     ws: WebSocket
-
-    def __init__(self, user: User, ws: WebSocket):
-        self.user = user
-        self.ws = ws
+    user: User
+    room_id: str
 
 
 class ConnectionManager:
@@ -45,19 +44,24 @@ class ConnectionManager:
         if to_delete.ws == conn.ws:
             self.active_conns.pop(to_delete.user.id)
 
-    async def send_message(self, id: str, data):
-        if id in self.active_conns:
-            conn = self.active_conns[id]
+    async def send_message(self, user_id: str, data):
+        if user_id in self.active_conns:
+            conn = self.active_conns[user_id]
             await conn.ws.send_json(data)
 
-    async def send_personal_message(self, conn: Connection, data):
-        await conn.ws.send_json(data)
+    async def send_personal_message(self, user_id: str, data):
+        await self.active_conns[user_id].ws.send_json(data)
 
     async def broadcast(self, data: Dict):
         for id in self.active_conns:
             await self.active_conns[id].ws.send_json(data)
 
+    async def multicast(self, users_id: List[str], data: Dict):
+        for user_id in users_id:
+            if user_id in self.active_conns:
+                await self.active_conns[user_id].ws.send_json(data)
+
     async def broadcast_except_self(self, conn: Connection, data: Dict):
-        for id in self.active_conns:
-            if id != conn.user.id:
-                await self.active_conns[id].ws.send_json(data)
+        for user_id in self.active_conns:
+            if user_id != conn.user.id:
+                await self.active_conns[user_id].ws.send_json(data)

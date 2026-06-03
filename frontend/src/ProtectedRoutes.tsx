@@ -15,7 +15,7 @@ export function ProtectedRoutes() {
   }
 
   return (
-    <div className="h-screen bg-background-50 text-text-950 dark:bg-background-950 dark:text-text-50">
+    <div className="flex justify-center h-dvh bg-background-50 text-text-950 dark:bg-background-950 dark:text-text-50">
       <Outlet />
     </div>
   )

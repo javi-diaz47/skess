@@ -1,0 +1,78 @@
+import { useContext, useEffect } from "react"
+import { useTimer } from "../hooks/useTimer"
+import { ONE_SECOND_IN_MILISECONDS } from "../contants/secondsToMiliseconds"
+import { Timer } from "./Timer"
+import { GameStatusContext } from "../context/GameStatusContext"
+import { CHAT_COLORS } from "../contants/chatColors"
+
+export function StatusBar() {
+
+  const { time, startTimer, cancelTimer } = useTimer()
+
+  const { status } = useContext(GameStatusContext)
+
+  useEffect(() => {
+
+    if (status?.state === "guess") {
+
+      const timestamp = new Date(status?.timestamp * ONE_SECOND_IN_MILISECONDS)
+      const now = new Date()
+
+      const diff = (now.getTime() - timestamp.getTime()) / ONE_SECOND_IN_MILISECONDS
+
+      const leftTime = Math.round(status?.game_guess_limit - diff)
+
+      if (leftTime > 0) {
+        startTimer(leftTime)
+      }
+
+    }
+
+    if (status?.state === "end") {
+      cancelTimer()
+    }
+
+  }, [status])
+
+
+  return (
+    <section className="flex text-sm md:text-base text-text-900 dark:text-text-50 justify-between md:justify-center items-center gap-2 md:gap-8">
+
+      <div className="min-w-19 md:h-16 flex gap-2 justify-center items-center text-sm md:text-base font-bold bg-background-100 dark:bg-background-900 rounded-full py-2 md:py-4 px-4 md:px-8">
+        <p>{status?.game_round || 0}/{status?.game_max_round || 0}</p>
+        <p className="hidden md:block">Rounds</p>
+      </div>
+
+      {
+        status?.hint && (
+          <div className="md:h-16 flex justify-center gap-1 md:gap-4 md:text-2xl font-bold bg-background-100 dark:bg-background-900 rounded-full py-2 md:py-4 px-4 md:px-8">
+            <p>
+              {
+                status?.hint.split("").map((ch, i) => (
+                  <span key={`${i}-${ch}`} className="mr-1 md:mr-2">{ch}</span>
+                ))
+              }
+            </p>
+            <span className="self-end text-xs md:text-base">
+              {status?.word_letter_count}
+            </span>
+          </div>
+        )
+      }
+
+      <Timer time={time} className="" />
+
+      {
+        status?.sketcher && (
+          <p className="hidden break-all md:flex items-center max-w-72 h-16 text-sm md:text-base bg-background-100 dark:bg-background-900 rounded-full py-4 px-8">
+            <span className={`mr-2 font-bold ${CHAT_COLORS[status?.sketcher?.color]}`}>
+              {status?.sketcher?.name}
+            </span>
+            is sketching!
+          </p>
+        )
+      }
+
+    </section>
+  )
+}

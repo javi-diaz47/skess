@@ -15,8 +15,7 @@ export function SketchBoard() {
 
   return (
     <div className="h-full flex flex-col items-center relative">
-      <h2 className="text-left text-2xl font-bold">Sketch board</h2>
-      <div className="relative w-full min-w-sm h-full">
+      <div className="relative w-full h-full">
         <canvas
           ref={canvas}
           className="w-full h-full bg-background-100 dark:bg-background-800 rounded-2xl"
