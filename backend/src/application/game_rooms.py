@@ -1,5 +1,5 @@
 from typing import Dict, List
-from src.domain.game.contants import (
+from src.domain.game.constants import (
     GAME_CHOOSE_TIME_LIMIT,
     GAME_GUESS_TIME_LIMIT,
     MAX_PLAYERS,
@@ -64,7 +64,6 @@ class GameRooms:
     def get_available_room(self, room_code: str) -> str | None:
         room_id: str | None = None
 
-        print(room_code, room_code is None, "<- this")
         if not len(room_code):
             for r_id in self.rooms:
                 if self.is_available(r_id):
