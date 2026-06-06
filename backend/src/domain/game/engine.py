@@ -1,5 +1,5 @@
 from typing import Callable, Coroutine, List, Set
-from src.domain.game.contants import (
+from src.domain.game.constants import (
     MAX_HINTS,
     MAX_PLAYERS,
     MAX_ROUNDS,
@@ -8,9 +8,11 @@ from src.domain.game.contants import (
 )
 from src.domain.game.events import (
     DomainEvent,
+    GamePaused,
+    GameUpdated,
     GameStarted,
     HintRevealed,
-    LeaderBoardUpdated,
+    LeaderboardUpdated,
     PlayerGuessedCorrectly,
     PlayerGuessedIncorrectly,
     PlayerJoined,
@@ -74,6 +76,8 @@ class Game:
 
         self._round_end: bool = True
 
+        self._current_timestamp: float = 0.0
+
         self._players_who_sketched: Set[str] = set()
         self.emit_event = emit_event
 
@@ -95,29 +99,80 @@ class Game:
         self._leaderboard.add_user(user_id)
         self._max_turns = len(self._users)
 
-    def remove_user(self, id) -> None:
-        self._users.remove(id)
-        self._leaderboard.remove_user(id)
+    def remove_user(self, user_id) -> None:
+        self._users.remove(user_id)
+        self._leaderboard.remove_user(user_id)
         self._max_turns = len(self._users)
+
+        if self._task_on_hint is not None:
+            self._task_on_hint.cancel()
+
+        if self._task_on_end is not None:
+            self._task_on_end.cancel()
+
+        asyncio.create_task(self._schedule_end(wait=False))
 
     def handle_join(self, user_id: str) -> None:
         self.add_user(user_id)
 
-        events: List[DomainEvent] = []
+        events: List[DomainEvent] = [
+            PlayerJoined(type="player_joined", player_id=user_id),
+            LeaderboardUpdated(
+                type="leaderboard_updated",
+                leaderboard=self._leaderboard.get_leaderboard(),
+            ),
+        ]
 
-        events.append(PlayerJoined(type="player_joined", player_id=user_id))
+        if len(self._users) < 2:
+            events.append(
+                GamePaused(
+                    type="game_paused",
+                    reason="not_enough_players",
+                    message="At least two players are require to start the game",
+                )
+            )
 
-        self.handle_start()
+        asyncio.create_task(self.emit_event(events))
 
-    def handle_start(self) -> None:
         if len(self._users) == 2:
             self.start()
+
+        if len(self._users) > 2:
+            events: List[DomainEvent] = [
+                GameUpdated(
+                    type="game_updated",
+                    user_id=user_id,
+                    sketcher_id=self._sketcher_id,
+                    hint=self._hint,
+                    word_letter_count=self.word_letter_count(),
+                    timestamp=self._current_timestamp,
+                    guess_limit=self._time_limits.guess,
+                    round=self._current_round,
+                    max_rounds=self._max_rounds,
+                    turn=self._current_turn,
+                    max_turns=self._max_turns,
+                    leaderboard=self._leaderboard.get_leaderboard(),
+                )
+            ]
+            asyncio.create_task(self.emit_event(events))
 
     def start(self) -> None:
         if isinstance(self._phase, ActiveState):
             return None
 
         N = len(self._users)
+
+        if N < 2:
+            events: DomainEvent = [
+                GamePaused(
+                    type="game_paused",
+                    reason="not_enough_players",
+                    message="At least two players are require to start the game",
+                )
+            ]
+
+            asyncio.create_task(self.emit_event(events))
+            return
 
         if self._sketcher_index == -1:
             self._sketcher_index = random.randint(0, N - 1)
@@ -142,6 +197,7 @@ class Game:
                 type="word_selection_started",
                 sketcher_id=self._sketcher_id,
                 words=self._words,
+                timer=self._time_limits.choose,
             ),
             GameStarted(
                 type="game_started",
@@ -161,6 +217,8 @@ class Game:
         if timestamp is None or self._word == "":
             return
 
+        self._current_timestamp = timestamp
+
         events: List[DomainEvent] = [
             WordSelected(
                 type="word_selected",
@@ -168,7 +226,7 @@ class Game:
                 hint=self._hint,
                 word=self._word,
                 word_letter_count=self.word_letter_count(),
-                timestamp=timestamp,
+                timestamp=self._current_timestamp,
                 guess_limit=self._time_limits.guess,
             )
         ]
@@ -204,7 +262,7 @@ class Game:
         else:
             # user guessed correctly - update leaderboard
             events.append(
-                LeaderBoardUpdated(type="leaderboard_updated", leaderboard=positions),
+                LeaderboardUpdated(type="leaderboard_updated", leaderboard=positions),
             )
             events.append(
                 PlayerGuessedCorrectly(
@@ -300,7 +358,7 @@ class Game:
                 pending_guessers=self.pending_guessers(),
                 delay=0,
             ),
-            LeaderBoardUpdated(
+            LeaderboardUpdated(
                 type="leaderboard_updated", leaderboard=self.leaderboard
             ),
             TurnEnded(
@@ -310,8 +368,28 @@ class Game:
                 word_letter_count=self.word_letter_count(),
                 guess_limit=self._time_limits.guess,
                 timestamp=timestamp,
+                # CHANGE IT
+                turn_scores=self._leaderboard.get_leaderboard(),
             ),
         ]
+
+        if self._current_turn >= self._max_turns:
+            self._current_turn = 0
+
+            if 0 < self._current_round < self._max_rounds:
+                self._current_round += 1
+                #   Emit new Round Event
+                # Show points
+                # Show Leaderboard
+                # Show Finish Round
+                # return
+
+            if self._current_round == self._max_rounds:
+                # Show points
+                # Show Finish Game
+                self._current_round = 0
+                self._players_who_sketched = set()
+                self._round_end = True
 
         asyncio.create_task(self.emit_event(events))
 
@@ -368,6 +446,10 @@ class Game:
             return None
 
         total_guessers = len(self._users) - 1
+
+        if total_guessers == 0:
+            return None
+
         av_score = sum(self._guessers_time) / total_guessers
         correct_guessers_ratio = len(self._correct_guessers) / total_guessers
 
