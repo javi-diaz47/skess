@@ -3,22 +3,18 @@ from typing import Dict, List
 from fastapi import WebSocket
 
 
-class User:
+@dataclass(slots=True)
+class UserWebSocket:
     id: str
     name: str
     color: str
     score: int
 
-    def __init__(self, id: str, name: str, color: str):
-        self.id = id
-        self.name = name
-        self.color = color
-
 
 @dataclass
 class Connection:
     ws: WebSocket
-    user: User
+    user: UserWebSocket
     room_id: str
 
 
