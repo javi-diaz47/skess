@@ -1,20 +1,17 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from src.application.orchestration import create_leaderboard
+from pydantic import ValidationError
 from src.utils.colors import COLORS
-from src.ws.connection_manager import Connection, User
-from src.ws.validation_message import validate_message, validate_payload
-from src.ws.websocket_events import (
-    ChooseSelectionEvent,
-    DisconnectEvent,
-    GuessEvent,
-    LeaderboardEvent,
-    PayloadLeaderboard,
-    SketchEvent,
-    SocketEvent,
-    StatusEvent,
-    UserWebSocket,
+from src.ws.connection_manager import Connection, UserWebSocket
+from src.ws.events.client import (
+    ClientGuessEvent,
+    ClientSelectWordEvent,
+    ClientSketchEvent,
+    ClientSocketEvent,
 )
-from src.application.startup import manager, game_rooms
+from src.ws.events.server import ServerSketchEvent, ServerPlayerAbandonedEvent
+from src.ws.events.invalid_message import INVALID_WEBSOCKET_MESSAGE
+
+from src.application.orchestration import manager, game_rooms
 from uuid import uuid4
 import random
 
@@ -37,77 +34,61 @@ async def websocket_endpoint(
         return
 
     conn = Connection(
-        ws, User(client_id, client_name, random.choice(COLORS)), room_id=_room_id
+        ws,
+        UserWebSocket(
+            id=client_id, name=client_name, color=random.choice(COLORS), score=0
+        ),
+        room_id=_room_id,
     )
     await manager.connect(conn)
 
     game = game_rooms.rooms[_room_id].game
 
     game.handle_join(user_id=conn.user.id)
+    print("user in room", _room_id)
 
     try:
         while True:
-            data = await ws.receive_json()
+            try:
+                data = await ws.receive_json()
 
-            val = validate_message(data)
-            if val["error"]:
-                await manager.send_personal_message(conn.user.id, val)
-                continue
+                ev = ClientSocketEvent(event=data).event
 
-            val = validate_payload(data)
-            if val["error"]:
-                await manager.send_personal_message(conn.user.id, val)
-                continue
+                match ev:
+                    case ClientSelectWordEvent():
+                        game.handle_choose_word(ev.word)
 
-            ev = SocketEvent(event=data).event
+                    case ClientGuessEvent():
+                        game.handle_guess(conn.user.id, ev.message)
 
-            match ev:
-                case StatusEvent():
-                    if ev.payload.status == "end":
-                        continue
+                    case ClientSketchEvent():
+                        new_ev = ServerSketchEvent(
+                            **ev.__dict__,
+                            id=str(uuid4()),
+                            sender=conn.user,
+                        )
+                        users_except_self = [
+                            user_id for user_id in game.users if user_id != conn.user.id
+                        ]
+                        await manager.multicast(users_except_self, new_ev.model_dump())
 
-                    if len(manager.active_conns) < 2:
-                        # send error message not enough players
-                        continue
-
-                    game.handle_start()
-
-                case ChooseSelectionEvent():
-                    game.handle_choose_word(ev.payload.word)
-
-                case GuessEvent():
-                    game.handle_guess(conn.user.id, ev.payload.message)
-
-                case SketchEvent():
-                    ev.event_id = str(uuid4())
-                    ev.user = UserWebSocket(**conn.user.__dict__)
-
-                    users_except_self = [
-                        user_id for user_id in game.users if user_id != conn.user.id
-                    ]
-                    await manager.multicast(users_except_self, ev.model_dump())
+            except ValidationError:
+                await manager.send_personal_message(
+                    conn.user.id, INVALID_WEBSOCKET_MESSAGE
+                )
 
     except WebSocketDisconnect:
-        manager.disconnect(conn)
         game.remove_user(conn.user.id)
+        manager.disconnect(conn)
 
-        # multicast disconnection
-        disconnect_ev = DisconnectEvent(
-            event_id=str(uuid4()),
-            type="disconnect",
-            user=UserWebSocket(**conn.user.__dict__),
-            # game_round=game.current_round,
-            # game_max_round=game.max_rounds,
-            # game_turn=game.current_turn,
-            # game_max_turn=game.max_turns,
+        player_abandoned_ev = ServerPlayerAbandonedEvent(
+            id=str(uuid4()),
+            type="player_abandoned",
+            message=f"{conn.user.name} abandoned the room",
+            player=conn.user,
         )
-        await manager.multicast(game.users, disconnect_ev.model_dump())
 
-        # update leaderboard
-        leaderboard = create_leaderboard(manager.active_conns, game.leaderboard)
-        lb_event = LeaderboardEvent(
-            event_id=str(uuid4()),
-            type="leaderboard",
-            payload=PayloadLeaderboard(leaderboard=leaderboard),
-        )
-        await manager.multicast(game.users, lb_event.model_dump())
+        users_except_self = [
+            user_id for user_id in game.users if user_id != conn.user.id
+        ]
+        await manager.multicast(users_except_self, player_abandoned_ev.model_dump())

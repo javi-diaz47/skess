@@ -1,41 +1,54 @@
 from typing import Dict
+from src.domain.game.leaderboard import LeaderboardScores
 from src.domain.game.events import (
+    GamePaused,
     GameStarted,
     HintRevealed,
-    LeaderBoardUpdated,
+    LeaderboardUpdated,
     PlayerGuessedCorrectly,
     PlayerGuessedIncorrectly,
     PlayerJoined,
+    GameUpdated,
     TurnEnded,
     WordSelected,
     WordSelectionStarted,
 )
 from src.ws.connection_manager import Connection
-from src.ws.websocket_events import (
-    ChooseOptionsEvent,
-    GuessEvent,
-    LeaderboardEvent,
-    PayloadChooseOptions,
-    PayloadLeaderboard,
-    PayloadStatusEvent,
-    PayloadGuess,
-    StatusEvent,
-    UserWebSocket,
+
+from src.ws.events.server import (
+    ServerGamePausedEvent,
+    ServerGameStartedEvent,
+    ServerGameUpdatedEvent,
+    ServerGuessEvent,
+    ServerPlayerJoinedEvent,
+    ServerWordSelectionEvent,
+    ServerWordSelectedEvent,
+    ServerLeaderboardUpdatedEvent,
+    ServerHintRevealedEvent,
+    ServerTurnEndedEvent,
 )
 from src.application.event_bus import DispatchEvent
-from src.application.startup import manager, game_rooms
+
 from src.application.event_bus import event_bus
 from uuid import uuid4
 
+from src.application.game_rooms import GameRooms
+from src.ws.connection_manager import ConnectionManager
+from src.domain.game.constants import MAX_ROOMS, ROOM_NUMBER
+
 import asyncio
 
+manager = ConnectionManager()
 
-def create_leaderboard(conns: Dict[str, Connection], positions):
+game_rooms = GameRooms(ROOM_NUMBER, MAX_ROOMS)
+
+
+def create_leaderboard(conns: Dict[str, Connection], positions: LeaderboardScores):
     leaderboard = []
-    for id, score in positions:
-        conns[id].user.score = score
-        if id in manager.active_conns:
-            leaderboard.append(manager.active_conns[id].user.__dict__)
+    for user_id, score in positions:
+        conns[user_id].user.score = score
+        if user_id in manager.active_conns:
+            leaderboard.append(manager.active_conns[user_id].user)
     return leaderboard
 
 
@@ -43,7 +56,33 @@ async def playerJoinedHandler(dispatch: DispatchEvent) -> None:
     if not isinstance(dispatch.event, PlayerJoined):
         return
 
-    print(f"{dispatch.event.player_id} player joined")
+    ev = dispatch.event
+
+    player = manager.active_conns[ev.player_id].user
+
+    new_ev = ServerPlayerJoinedEvent(
+        id=str(uuid4()),
+        type="player_joined",
+        player=player,
+        message=f"{player.name} joined the room",
+    )
+
+    players = game_rooms.rooms[dispatch.room_id].game.users
+    users_except_self = [user_id for user_id in players if user_id != ev.player_id]
+    await manager.multicast(users_except_self, new_ev.model_dump())
+
+
+async def gamePausedHandler(dispatch: DispatchEvent) -> None:
+    if not isinstance(dispatch.event, GamePaused):
+        return
+
+    ev = dispatch.event
+
+    new_ev = ServerGamePausedEvent(
+        id=str(uuid4()), type="game_paused", reason=ev.reason, message=ev.message
+    )
+
+    await manager.broadcast(new_ev.model_dump())
 
 
 async def wordSelectionStartedHandler(dispatch: DispatchEvent) -> None:
@@ -52,10 +91,8 @@ async def wordSelectionStartedHandler(dispatch: DispatchEvent) -> None:
 
     ev = dispatch.event
 
-    ws_ev = ChooseOptionsEvent(
-        event_id=str(uuid4()),
-        type="choose_options",
-        payload=PayloadChooseOptions(words=ev.words),
+    ws_ev = ServerWordSelectionEvent(
+        id=str(uuid4()), type="word_selection_started", words=ev.words, timer=ev.timer
     )
 
     await manager.send_message(ev.sketcher_id, ws_ev.model_dump())
@@ -67,19 +104,18 @@ async def gameStartedHandler(dispatch: DispatchEvent) -> None:
 
     ev = dispatch.event
 
-    status_event = StatusEvent(
-        event_id=str(uuid4()),
-        type="status",
-        payload=PayloadStatusEvent(status="start"),
-        game_round=ev.round,
-        game_max_round=ev.max_rounds,
-        game_turn=ev.turn,
-        game_max_turn=ev.max_turns,
+    new_ev = ServerGameStartedEvent(
+        id=str(uuid4()),
+        type="game_started",
+        round=ev.round,
+        max_rounds=ev.max_rounds,
+        turn=ev.turn,
+        max_turns=ev.max_turns,
     )
 
     await manager.multicast(
         game_rooms.rooms[dispatch.room_id].game.users,
-        status_event.model_dump(),
+        new_ev.model_dump(),
     )
 
 
@@ -91,29 +127,28 @@ async def wordSelectedHandler(dispatch: DispatchEvent) -> None:
 
     sketcher = manager.active_conns[ev.sketcher_id].user
 
-    status_ev = StatusEvent(
-        event_id=str(uuid4()),
-        type="status",
-        payload=PayloadStatusEvent(
-            status="guess",
-            sketcher=UserWebSocket(**sketcher.__dict__),
-            hint=ev.hint,
-            word_letter_count=ev.word_letter_count,
-        ),
+    new_ev = ServerWordSelectedEvent(
+        id=str(uuid4()),
+        type="word_selected",
+        sketcher=sketcher,
+        hint=ev.hint,
+        word_letter_count=ev.word_letter_count,
         timestamp=ev.timestamp,
-        game_guess_limit=ev.guess_limit,
+        guess_limit=ev.guess_limit,
     )
 
+    # show hints to players
     players = game_rooms.rooms[dispatch.room_id].game.users
     users_except_self = [user_id for user_id in players if user_id != ev.sketcher_id]
-    await manager.multicast(users_except_self, status_ev.model_dump())
+    await manager.multicast(users_except_self, new_ev.model_dump())
 
-    status_ev.payload.hint = ev.word
-    await manager.send_message(ev.sketcher_id, status_ev.model_dump())
+    # show the sketcher the word
+    new_ev.hint = ev.word
+    await manager.send_message(ev.sketcher_id, new_ev.model_dump())
 
 
 async def leaderboardUpdatedHandler(dispatch: DispatchEvent):
-    if not isinstance(dispatch.event, LeaderBoardUpdated):
+    if not isinstance(dispatch.event, LeaderboardUpdated):
         return
 
     ev = dispatch.event
@@ -121,14 +156,12 @@ async def leaderboardUpdatedHandler(dispatch: DispatchEvent):
     # user guessed correctly - update leaderboard
     leaderboard = create_leaderboard(manager.active_conns, ev.leaderboard)
 
-    lb_event = LeaderboardEvent(
-        event_id=str(uuid4()),
-        type="leaderboard",
-        payload=PayloadLeaderboard(leaderboard=leaderboard),
+    new_ev = ServerLeaderboardUpdatedEvent(
+        id=str(uuid4()), type="leaderboard_updated", leaderboard=leaderboard
     )
 
     players = game_rooms.rooms[dispatch.room_id].game.users
-    await manager.multicast(players, lb_event.model_dump())
+    await manager.multicast(players, new_ev.model_dump())
 
 
 async def playerGuessedCorrectlyHandler(dispatch: DispatchEvent):
@@ -139,25 +172,25 @@ async def playerGuessedCorrectlyHandler(dispatch: DispatchEvent):
 
     user = manager.active_conns[ev.user_id].user
 
-    correct_guess_message_ev = GuessEvent(
-        event_id=str(uuid4()),
-        user=UserWebSocket(**user.__dict__),
+    correct_guess_message_ev = ServerGuessEvent(
+        id=str(uuid4()),
         type="guess",
-        payload=PayloadGuess(message=f"{user.name} guessed the word", correct=True),
+        message=f"{user.name} guessed the word",
+        correct=True,
+        sender=user,
     )
 
     players = game_rooms.rooms[dispatch.room_id].game.users
     await manager.multicast(players, correct_guess_message_ev.model_dump())
 
-    correct_guess_hint_ev = StatusEvent(
-        event_id=str(uuid4()),
-        type="status",
-        payload=PayloadStatusEvent(
-            status="hint",
-            hint=ev.word,
-            word_letter_count=ev.word_letter_count,
-        ),
+    # reveal word to the player
+    correct_guess_hint_ev = ServerHintRevealedEvent(
+        id=str(uuid4()),
+        type="hint_revealed",
+        hint=ev.word,
+        word_letter_count=ev.word_letter_count,
     )
+
     await manager.send_personal_message(ev.user_id, correct_guess_hint_ev.model_dump())
 
 
@@ -169,11 +202,12 @@ async def playerGuessedIncorrectlyHandler(dispatch: DispatchEvent):
 
     user = manager.active_conns[ev.user_id].user
 
-    guess_event = GuessEvent(
+    guess_event = ServerGuessEvent(
+        id=str(uuid4()),
         type="guess",
-        event_id=str(uuid4()),
-        user=UserWebSocket(**user.__dict__),
-        payload=PayloadGuess(message=ev.message, correct=False),
+        message=ev.message,
+        correct=False,
+        sender=user,
     )
 
     players = game_rooms.rooms[dispatch.room_id].game.users
@@ -188,15 +222,40 @@ async def hintRevealedHandler(dispatch: DispatchEvent):
 
     await asyncio.sleep(ev.delay)
 
-    status_event = StatusEvent(
-        event_id=str(uuid4()),
-        type="status",
-        payload=PayloadStatusEvent(
-            status="hint", hint=ev.hint, word_letter_count=ev.word_letter_count
-        ),
+    new_ev = ServerHintRevealedEvent(
+        id=str(uuid4()),
+        type="hint_revealed",
+        hint=ev.hint,
+        word_letter_count=ev.word_letter_count,
     )
 
-    await manager.multicast(ev.pending_guessers, status_event.model_dump())
+    await manager.multicast(ev.pending_guessers, new_ev.model_dump())
+
+
+async def gameUpdatedHandler(dispatch: DispatchEvent):
+    if not isinstance(dispatch.event, GameUpdated):
+        return
+
+    ev = dispatch.event
+    sketcher = manager.active_conns[ev.sketcher_id].user
+    leaderboard = create_leaderboard(manager.active_conns, ev.leaderboard)
+
+    new_ev = ServerGameUpdatedEvent(
+        id=str(uuid4()),
+        type="game_updated",
+        hint=ev.hint,
+        word_letter_count=ev.word_letter_count,
+        timestamp=ev.timestamp,
+        sketcher=sketcher,
+        guess_limit=ev.guess_limit,
+        round=ev.round,
+        max_rounds=ev.max_rounds,
+        turn=ev.turn,
+        max_turns=ev.max_turns,
+        leaderboard=leaderboard,
+    )
+
+    await manager.send_message(ev.user_id, new_ev.model_dump())
 
 
 async def turnEndedHandler(dispatch: DispatchEvent):
@@ -205,18 +264,15 @@ async def turnEndedHandler(dispatch: DispatchEvent):
 
     ev = dispatch.event
 
-    sketcher = manager.active_conns[ev.sketcher_id].user
+    turn_scores = create_leaderboard(manager.active_conns, ev.turn_scores)
 
-    end_ev = StatusEvent(
-        type="status",
-        payload=PayloadStatusEvent(
-            status="end",
-            sketcher=UserWebSocket(**sketcher.__dict__),
-            hint=ev.word,
-            word_letter_count=ev.word_letter_count,
-        ),
+    end_ev = ServerTurnEndedEvent(
+        id=str(uuid4()),
+        type="turn_ended",
+        hint=ev.word,
+        word_letter_count=ev.word_letter_count,
+        turn_scores=turn_scores,
         timestamp=ev.timestamp,
-        game_guess_limit=ev.guess_limit,
     )
 
     players = game_rooms.rooms[dispatch.room_id].game.users
@@ -232,3 +288,5 @@ event_bus.subscribe("player_guessed_correctly", playerGuessedCorrectlyHandler)
 event_bus.subscribe("player_guessed_incorrectly", playerGuessedIncorrectlyHandler)
 event_bus.subscribe("hint_revealed", hintRevealedHandler)
 event_bus.subscribe("turn_ended", turnEndedHandler)
+event_bus.subscribe("game_updated", gameUpdatedHandler)
+event_bus.subscribe("game_paused", gamePausedHandler)
