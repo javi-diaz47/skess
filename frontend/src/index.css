@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
@@ -10,8 +10,8 @@
   --color-text-400: oklch(57.06% 0.272 296.98);
   --color-text-500: oklch(51.66% 0.293 289.66);
   --color-text-600: oklch(43.82% 0.248 290.25);
-  --color-text-700: oklch(35.62% 0.200 291.21);
-  --color-text-800: oklch(26.91% 0.150 293.00);
+  --color-text-700: oklch(35.62% 0.2 291.21);
+  --color-text-800: oklch(26.91% 0.15 293);
   --color-text-900: oklch(17.44% 0.094 297.55);
   --color-text-950: oklch(12.22% 0.064 302.28);
 
@@ -19,7 +19,7 @@
   --color-background-100: oklch(88.81% 0.055 302.78);
   --color-background-200: oklch(77.51% 0.116 301.55);
   --color-background-300: oklch(66.67% 0.174 299.51);
-  --color-background-400: oklch(56.55% 0.227 295.70);
+  --color-background-400: oklch(56.55% 0.227 295.7);
   --color-background-500: oklch(48.65% 0.259 289.68);
   --color-background-600: oklch(41.47% 0.218 290.03);
   --color-background-700: oklch(34.06% 0.174 291.34);
@@ -29,13 +29,13 @@
 
   --color-primary-50: oklch(94.64% 0.022 302.93);
   --color-primary-100: oklch(89.52% 0.044 303.08);
-  --color-primary-200: oklch(78.96% 0.090 302.10);
+  --color-primary-200: oklch(78.96% 0.09 302.1);
   --color-primary-300: oklch(68.45% 0.138 300.67);
   --color-primary-400: oklch(58.16% 0.183 297.94);
-  --color-primary-500: oklch(48.94% 0.220 293.94);
-  --color-primary-600: oklch(41.80% 0.184 294.19);
+  --color-primary-500: oklch(48.94% 0.22 293.94);
+  --color-primary-600: oklch(41.8% 0.184 294.19);
   --color-primary-700: oklch(34.48% 0.147 295.21);
-  --color-primary-800: oklch(26.64% 0.106 296.10);
+  --color-primary-800: oklch(26.64% 0.106 296.1);
   --color-primary-900: oklch(18.28% 0.061 297.95);
   --color-primary-950: oklch(13.65% 0.037 300.65);
 
@@ -46,15 +46,15 @@
   --color-secondary-400: oklch(82.26% 0.138 217.23);
   --color-secondary-500: oklch(79.49% 0.147 221.91);
   --color-secondary-600: oklch(67.45% 0.124 221.11);
-  --color-secondary-700: oklch(54.59% 0.100 220.77);
+  --color-secondary-700: oklch(54.59% 0.1 220.77);
   --color-secondary-800: oklch(40.91% 0.075 220.15);
   --color-secondary-900: oklch(26.26% 0.047 216.04);
-  --color-secondary-950: oklch(18.00% 0.032 213.85);
+  --color-secondary-950: oklch(18% 0.032 213.85);
 
   --color-accent-50: oklch(94.82% 0.027 350.88);
   --color-accent-100: oklch(89.85% 0.056 351.03);
   --color-accent-200: oklch(80.32% 0.116 353.13);
-  --color-accent-300: oklch(71.90% 0.175 356.39);
+  --color-accent-300: oklch(71.9% 0.175 356.39);
   --color-accent-400: oklch(65.43% 0.222 0.36);
   --color-accent-500: oklch(61.62% 0.243 6.54);
   --color-accent-600: oklch(52.21% 0.205 6.14);
@@ -88,8 +88,40 @@ canvas {
   border-radius: 9999px;
 }
 
-html[data-theme="dark"]  ::-webkit-scrollbar-thumb {
+html[data-theme='dark'] ::-webkit-scrollbar-thumb {
   background: var(--color-primary-700);
   border-radius: 9999px;
 }
 
+html[data-theme='dark'] {
+  --shimmer-base: var(--color-accent-500);
+  --shimmer-highlight: var(--color-background-900);
+}
+
+html:not([data-theme='dark']) {
+  --shimmer-base: var(--color-accent-500);
+  --shimmer-highlight: var(--color-background-100);
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    var(--shimmer-base) 0%,
+    var(--shimmer-highlight) 50%,
+    var(--shimmer-base) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 4s infinite linear;
+}
