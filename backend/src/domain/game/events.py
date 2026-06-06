@@ -18,6 +18,8 @@ class WordSelectionStarted:
     sketcher_id: str
     words: List[str]
 
+    timer: int
+
 
 @dataclass(frozen=True, slots=True)
 class WordSelected:
@@ -43,7 +45,7 @@ class GameStarted:
 
 
 @dataclass(frozen=True, slots=True)
-class LeaderBoardUpdated:
+class LeaderboardUpdated:
     type: Literal["leaderboard_updated"]
 
     leaderboard: LeaderboardScores
@@ -87,16 +89,64 @@ class TurnEnded:
     word: str
     word_letter_count: int
 
+    turn_scores: LeaderboardScores
+
     timestamp: float
     guess_limit: int
 
 
+@dataclass(frozen=True, slots=True)
+class RoundEnded:
+    type: Literal["round_ended"]
+
+
+@dataclass(frozen=True, slots=True)
+class GameEnded:
+    type: Literal["game_ended"]
+
+    leaderboard: LeaderboardScores
+
+
+@dataclass(frozen=True, slots=True)
+class GameUpdated:
+    type: Literal["game_updated"]
+
+    user_id: str
+
+    sketcher_id: str
+
+    timestamp: float
+
+    hint: str
+    word_letter_count: int
+
+    guess_limit: int
+    round: int
+    max_rounds: int
+    turn: int
+    max_turns: int
+    leaderboard: LeaderboardScores
+
+
+@dataclass(frozen=True, slots=True)
+class GamePaused:
+    type: Literal["game_paused"]
+
+    reason: str
+
+    message: str
+
+
 type DomainEvent = Union[
     PlayerJoined,
+    GamePaused,
+    GameUpdated,
+    GameEnded,
+    RoundEnded,
     WordSelectionStarted,
     GameStarted,
     WordSelected,
-    LeaderBoardUpdated,
+    LeaderboardUpdated,
     PlayerGuessedCorrectly,
     PlayerGuessedIncorrectly,
     HintRevealed,
