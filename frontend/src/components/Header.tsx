@@ -7,37 +7,29 @@ type Theme = 'light' | 'dark'
 export function Header() {
   const { session, onDeleteSession } = useContext(SessionContext)
 
-  const [theme, setTheme] = useState<Theme>('light')
+  const getInitialTheme = (): Theme => {
+    const stored = localStorage.getItem('theme')
 
-  const onSetTheme = (newTheme: Theme) => {
-    document.documentElement.setAttribute('data-theme', newTheme)
-    localStorage.setItem('theme', newTheme)
-    setTheme(newTheme)
+    if (stored === 'light' || stored === 'dark') {
+      return stored
+    }
+
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light'
+  }
+
+  const [theme, setTheme] = useState<Theme>(() => getInitialTheme())
+
+  const onToggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light'
     setTheme(newTheme)
   }
 
   useEffect(() => {
-    if ('theme' in localStorage) {
-      const newTheme = localStorage.getItem('theme')
-
-      if (theme !== newTheme && (newTheme === 'light' || newTheme === 'dark')) {
-        onSetTheme(newTheme)
-      }
-      return
-    }
-
-    if (
-      !('theme' in localStorage) &&
-      window.matchMedia('(prefers-color-scheme: dark)').matches
-    ) {
-      onSetTheme('dark')
-    }
-  }, [])
-
-  const onToggleDarkTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light'
-    onSetTheme(newTheme)
-  }
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('theme', theme)
+  }, [theme])
 
   return (
     <header className="text-sm md:text-base text-text-900 dark:text-text-50 flex justify-between items-center md:py-4 rounded-full">
@@ -61,7 +53,7 @@ export function Header() {
 
         <DarkThemeToggle
           className="text-text-900 dark:text-text-50"
-          onClick={onToggleDarkTheme}
+          onClick={onToggleTheme}
         />
       </div>
     </header>
