@@ -2,12 +2,12 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import { ProtectedRoutes } from './ProtectedRoutes.tsx'
-import { GameStatusProvider } from './context/GameStatusContext.tsx'
 import { SessionProvider } from './context/session/SessionProvider.tsx'
 import { WebSocketProvider } from './context/WebSockets/WebSocketsProvider.tsx'
 import { Login } from './Login.tsx'
 import { Home } from './Home.tsx'
 import './index.css'
+import { GameStatusProvider } from './context/GameStatus/GameStatusContext copy.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

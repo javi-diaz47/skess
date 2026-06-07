@@ -2,7 +2,7 @@ import { useContext, useEffect } from 'react'
 import { useTimer } from '../hooks/useTimer'
 import { ONE_SECOND_IN_MILISECONDS } from '../contants/secondsToMiliseconds'
 import { Timer } from './Timer'
-import { GameStatusContext } from '../context/GameStatusContext'
+import { GameStatusContext } from '../context/GameStatus/GameStatusContext'
 import { CHAT_COLORS } from '../contants/chatColors'
 import { LoaderAnimation } from './LoaderAnimation'
 

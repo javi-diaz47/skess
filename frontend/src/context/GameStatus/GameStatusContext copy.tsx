@@ -1,43 +1,15 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react'
-import {
-  WebSocketContext,
-  type GameStarted,
-  type GameUpdated,
-  type HintRevealed,
-  type TurnEnded,
-  type UserWebSocket,
-  type WordSelected,
-} from './WebSockets/WebsSocketsContext'
-import type { GamePaused } from './WebSockets/types'
-
-type Status = {
-  state: 'start' | 'guess' | 'end' | 'hint' | 'pause'
-  sketcher: UserWebSocket
-  timestamp: number | null
-  guess_limit: number | null
-  guess_word: string
-  hint: string
-  word_letter_count: number
-  round: number | null
-  max_rounds: number | null
-  turn: number | null
-  max_turns: number | null
-}
-
-export type GameStatusContextValue = {
-  status: Status
-}
-
-export const GameStatusContext = createContext<GameStatusContextValue | null>(
-  null,
-)
+import { useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import type {
+  GamePaused,
+  GameStarted,
+  GameUpdated,
+  HintRevealed,
+  TurnEnded,
+  WordSelected,
+} from '../WebSockets/types'
+import { DEFAULT_STATUS, type Status } from './types'
+import { WebSocketContext } from '../WebSockets/WebsSocketsContext'
+import { GameStatusContext } from './GameStatusContext'
 
 export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
   const { subscribe } = useContext(WebSocketContext)
@@ -45,7 +17,7 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
   const logoutAudio = useRef<HTMLAudioElement>(null)
   const loginAudio = useRef<HTMLAudioElement>(null)
 
-  const [status, setStatus] = useState<Status | null>(null)
+  const [status, setStatus] = useState<Status>(DEFAULT_STATUS)
 
   useEffect(() => {
     loginAudio.current = new Audio('/sounds/player-join.mp3')
