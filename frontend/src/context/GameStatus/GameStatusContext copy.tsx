@@ -1,6 +1,5 @@
 import { useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type {
-  GamePaused,
   GameStarted,
   GameUpdated,
   HintRevealed,
@@ -31,43 +30,6 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
       loginAudio.current?.play()
     })
 
-    const unsubWordSelected = subscribe('word_selected', (ev: WordSelected) => {
-      setStatus((prev) => {
-        return {
-          ...prev,
-          state: 'guess',
-          sketcher: ev.sketcher,
-          timestamp: ev.timestamp,
-          guess_limit: ev.guess_limit,
-          hint: ev.hint,
-          word_letter_count: ev.word_letter_count,
-        }
-      })
-    })
-
-    const unsubHintRevealed = subscribe('hint_revealed', (ev: HintRevealed) => {
-      setStatus((prev) => {
-        return {
-          ...prev,
-          state: prev?.state === 'pause' ? 'pause' : 'hint',
-          hint: ev.hint,
-          word_letter_count: ev.word_letter_count,
-        }
-      })
-    })
-
-    const unsubTurnEnded = subscribe('turn_ended', (ev: TurnEnded) => {
-      setStatus((prev) => {
-        return {
-          ...prev,
-          state: prev?.state === 'pause' ? 'pause' : 'end',
-          hint: ev.hint,
-          word_letter_count: ev.word_letter_count,
-          timestamp: ev.timestamp,
-        }
-      })
-    })
-
     const unsubGameStarted = subscribe('game_started', (ev: GameStarted) => {
       setStatus((prev) => {
         return {
@@ -81,8 +43,18 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
       })
     })
 
+    const unsubGamePaused = subscribe('game_paused', () => {
+      setStatus((prev) => {
+        return {
+          ...prev,
+          state: 'pause',
+        }
+      })
+    })
+
     const unsubGameUpdated = subscribe('game_updated', (ev: GameUpdated) => {
       console.log('GAME UPDATED', ev)
+
       setStatus((prev) => {
         return {
           state: prev?.state === 'pause' ? 'pause' : 'guess',
@@ -106,24 +78,56 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
       })
     })
 
-    const unsubGamePaused = subscribe('game_paused', (_: GamePaused) => {
+    const unsubWordSelected = subscribe('word_selected', (ev: WordSelected) => {
       setStatus((prev) => {
         return {
           ...prev,
-          state: 'pause',
+          state: 'guess',
+          sketcher: ev.sketcher,
+          timestamp: ev.timestamp,
+          guess_limit: ev.guess_limit,
+          hint: ev.hint,
+          word_letter_count: ev.word_letter_count,
+        }
+      })
+    })
+
+    const unsubTurnEnded = subscribe('turn_ended', (ev: TurnEnded) => {
+      setStatus((prev) => {
+        return {
+          ...prev,
+          state: prev?.state === 'pause' ? 'pause' : 'end',
+          hint: ev.hint,
+          word_letter_count: ev.word_letter_count,
+          timestamp: ev.timestamp,
+        }
+      })
+    })
+
+    const unsubHintRevealed = subscribe('hint_revealed', (ev: HintRevealed) => {
+      setStatus((prev) => {
+        return {
+          ...prev,
+          state: prev?.state === 'pause' ? 'pause' : 'hint',
+          hint: ev.hint,
+          word_letter_count: ev.word_letter_count,
         }
       })
     })
 
     return () => {
-      unsubWordSelected()
-      unsubGameStarted()
-      unsubHintRevealed()
-      unsubTurnEnded()
-      unsubGameUpdated()
-      unsubGamePaused()
-      unsubPlayerAbandoned()
       unsubPlayerJoined()
+      unsubPlayerAbandoned()
+
+      unsubGameStarted()
+      unsubGamePaused()
+      unsubGameUpdated()
+
+      unsubWordSelected()
+
+      unsubTurnEnded()
+
+      unsubHintRevealed()
     }
   }, [])
 

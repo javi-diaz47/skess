@@ -16,6 +16,7 @@ import getStroke from 'perfect-freehand'
 import { STROKE_OPTIONS } from '../contants/strokeOptions'
 import { SKETCH_COLORS } from '../contants/sketchColors'
 import { sessionToUserWebSocket } from '../utils/sessionToWebSocketUser'
+import type { GameStarted } from '../context/WebSockets/types'
 
 export const useSketch = () => {
   const { subscribe, send } = useContext(WebSocketContext)
@@ -158,15 +159,13 @@ export const useSketch = () => {
       }
     })
 
-    const unsubStatus = subscribe('status', (ev) => {
-      if (ev.payload.status === 'start') {
-        setPaths([])
-      }
+    const unsubStarted = subscribe('game_started', (ev: GameStarted) => {
+      setPaths([])
     })
 
     return () => {
       unsubSketch()
-      unsubStatus()
+      unsubStarted()
     }
   }, [])
 

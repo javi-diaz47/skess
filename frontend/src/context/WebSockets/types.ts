@@ -15,58 +15,21 @@ export type UserWebSocket = {
   score: number
 }
 
-export type GuessEvent = SocketEvent & {
-  type: 'guess'
+export type PlayerJoined = SocketEvent & {
+  type: 'player_joined'
 
   message: string
-  correct: boolean
 
-  sender: UserWebSocket
+  player: UserWebSocket
 }
 
-export type CreateGuessEvent = Omit<GuessEvent, 'id' | 'correct' | 'sender'>
+export type PlayerAbandoned = SocketEvent & {
+  type: 'player_abandoned'
 
-export interface Path {
-  points: number[][]
-  color: string
+  message: string
+
+  player: UserWebSocket
 }
-
-export type SketchEvent = SocketEvent & {
-  type: 'sketch'
-
-  path: Path
-
-  sketching: boolean
-
-  sender: UserWebSocket
-}
-
-export type CreateSketchEvent = Omit<SketchEvent, 'id' | 'sender'>
-
-export type WordSelectionStarted = SocketEvent & {
-  words: string[]
-  timer: number
-}
-
-export type SelectWord = SocketEvent & {
-  type: 'select_word'
-  word: string
-}
-
-export type WordSelected = SocketEvent & {
-  type: 'word_selected'
-
-  word: string
-  sketcher: UserWebSocket
-
-  hint: string
-  word_letter_count: number
-
-  guess_limit: number
-  timestamp: number
-}
-
-export type CreateSelectWord = Omit<SelectWord, 'id'>
 
 export type GameStarted = SocketEvent & {
   type: 'game_started'
@@ -77,27 +40,12 @@ export type GameStarted = SocketEvent & {
   max_turns: number
 }
 
-export type LeaderboardUpdated = SocketEvent & {
-  type: 'leaderboard_updated'
-  leaderboard: UserWebSocket[]
-}
+export type GamePaused = SocketEvent & {
+  type: 'game_paused'
 
-export type HintRevealed = SocketEvent & {
-  type: 'hint_revealed'
+  reason: string
 
-  hint: string
-  word_letter_count: number
-}
-
-export type TurnEnded = SocketEvent & {
-  type: 'turn_ended'
-
-  hint: string
-  word_letter_count: number
-
-  turn_scores: UserWebSocket[]
-
-  timestamp: number
+  message: string
 }
 
 export type GameUpdated = SocketEvent & {
@@ -121,26 +69,78 @@ export type GameUpdated = SocketEvent & {
   leaderboard: UserWebSocket[]
 }
 
-export type PlayerAbandoned = SocketEvent & {
-  type: 'player_abandoned'
-
-  message: string
-
-  player: UserWebSocket
+export type WordSelectionStarted = SocketEvent & {
+  words: string[]
+  timer: number
 }
 
-export type GamePaused = SocketEvent & {
-  type: 'game_paused'
-
-  reason: string
-
-  message: string
+export type SelectWord = SocketEvent & {
+  type: 'select_word'
+  word: string
 }
 
-export type PlayerJoined = SocketEvent & {
-  type: 'player_joined'
+export type CreateSelectWord = Omit<SelectWord, 'id'>
+
+export type WordSelected = SocketEvent & {
+  type: 'word_selected'
+
+  word: string
+  sketcher: UserWebSocket
+
+  hint: string
+  word_letter_count: number
+
+  guess_limit: number
+  timestamp: number
+}
+
+export interface Path {
+  points: number[][]
+  color: string
+}
+
+export type SketchEvent = SocketEvent & {
+  type: 'sketch'
+
+  path: Path
+
+  sketching: boolean
+
+  sender: UserWebSocket
+}
+
+export type CreateSketchEvent = Omit<SketchEvent, 'id' | 'sender'>
+
+export type GuessEvent = SocketEvent & {
+  type: 'guess'
 
   message: string
+  correct: boolean
 
-  player: UserWebSocket
+  sender: UserWebSocket
+}
+
+export type CreateGuessEvent = Omit<GuessEvent, 'id' | 'correct' | 'sender'>
+
+export type HintRevealed = SocketEvent & {
+  type: 'hint_revealed'
+
+  hint: string
+  word_letter_count: number
+}
+
+export type TurnEnded = SocketEvent & {
+  type: 'turn_ended'
+
+  hint: string
+  word_letter_count: number
+
+  turn_scores: UserWebSocket[]
+
+  timestamp: number
+}
+
+export type LeaderboardUpdated = SocketEvent & {
+  type: 'leaderboard_updated'
+  leaderboard: UserWebSocket[]
 }

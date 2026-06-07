@@ -1,61 +1,54 @@
 import { useContext, useEffect, useRef, type ReactNode } from 'react'
 import { SessionContext } from '../session/SessionContext'
-import type {
-  CreateGuessEvent,
-  CreateSelectWord,
-  CreateSketchEvent,
-  GamePaused,
-  GameStarted,
-  GameUpdated,
-  GuessEvent,
-  HintRevealed,
-  LeaderboardUpdated,
-  PlayerAbandoned,
-  SketchEvent,
-  TurnEnded,
-  WordSelected,
-  WordSelectionStarted,
-} from './types'
-import { WebSocketContext } from './WebsSocketsContext'
+import {
+  WebSocketContext,
+  type CreateSocketEvent,
+  type SocketEvents,
+} from './WebsSocketsContext'
 
-export type SocketEvents = {
-  guess: GuessEvent
-  game_paused: GamePaused
-  game_started: GameStarted
-  game_updated: GameUpdated
-  leaderboard_updated: LeaderboardUpdated
-  turn_ended: TurnEnded
-  hint_revealed: HintRevealed
-  word_selected: WordSelected
-  word_selection_started: WordSelectionStarted
-  player_abandoned: PlayerAbandoned
-  sketch: SketchEvent
-  close: CloseEvent
+type SubscriberRegistry = {
+  [K in keyof SocketEvents]: Set<(ev: SocketEvents[K]) => void>
 }
 
-export type CreateSocketEvent =
-  | CreateGuessEvent
-  | CreateSketchEvent
-  | CreateSelectWord
+const DEFAULT_SUBSCRIBER_REGISTRY: SubscriberRegistry = {
+  player_joined: new Set(),
+  player_abandoned: new Set(),
+
+  game_started: new Set(),
+  game_paused: new Set(),
+  game_updated: new Set(),
+
+  word_selection_started: new Set(),
+  word_selected: new Set(),
+
+  turn_ended: new Set(),
+
+  guess: new Set(),
+  hint_revealed: new Set(),
+  sketch: new Set(),
+
+  leaderboard_updated: new Set(),
+
+  close: new Set(),
+}
 
 export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
-  const { session, hasSession } = useContext(SessionContext)
+  const { session } = useContext(SessionContext)
 
   const ws = useRef<WebSocket | null>(null)
 
-  const subscribers = useRef<Record<string, Function[]>>({})
+  const subscribers = useRef<SubscriberRegistry>(DEFAULT_SUBSCRIBER_REGISTRY)
 
-  const subscribe = <K extends keyof SocketEvents>(type: K, fn: Function) => {
-    if (!subscribers.current[type]) {
-      subscribers.current[type] = []
-    }
-
-    subscribers.current[type].push(fn)
+  const subscribe = <K extends keyof SocketEvents>(
+    type: K,
+    fn: (ev: SocketEvents[K]) => void,
+  ) => {
+    subscribers.current[type].add(fn)
 
     return () => {
-      subscribers.current[type] = subscribers.current[type].filter(
-        (f) => f !== fn,
-      )
+      if (subscribers.current[type]) {
+        subscribers.current[type].delete(fn)
+      }
     }
   }
 
@@ -68,7 +61,9 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
     }
     console.log(data)
 
-    subscribers.current[data.type]?.forEach((fn) => fn(data))
+    subscribers.current[data.type as keyof SubscriberRegistry].forEach((fn) =>
+      fn(data),
+    )
   }
 
   const onClose = (ev: CloseEvent) => {
@@ -81,7 +76,7 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
   }
 
   useEffect(() => {
-    if (!hasSession() || ws.current !== null) return
+    if (session === null || ws.current !== null) return
 
     const URI = 'ws://127.0.0.1:8000/ws'
     ws.current = new WebSocket(

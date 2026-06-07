@@ -3,10 +3,13 @@ import type {
   CreateGuessEvent,
   CreateSelectWord,
   CreateSketchEvent,
+  GamePaused,
   GameStarted,
+  GameUpdated,
   GuessEvent,
   HintRevealed,
   LeaderboardUpdated,
+  PlayerAbandoned,
   PlayerJoined,
   SketchEvent,
   TurnEnded,
@@ -15,15 +18,24 @@ import type {
 } from './types'
 
 export type SocketEvents = {
-  guess: GuessEvent
-  game_started: GameStarted
-  leaderboard_updated: LeaderboardUpdated
-  turn_ended: TurnEnded
-  hint_revealed: HintRevealed
-  word_selected: WordSelected
-  word_selection_started: WordSelectionStarted
-  sketch: SketchEvent
   player_joined: PlayerJoined
+  player_abandoned: PlayerAbandoned
+
+  game_started: GameStarted
+  game_paused: GamePaused
+  game_updated: GameUpdated
+
+  word_selection_started: WordSelectionStarted
+  word_selected: WordSelected
+
+  sketch: SketchEvent
+  guess: GuessEvent
+  hint_revealed: HintRevealed
+
+  turn_ended: TurnEnded
+
+  leaderboard_updated: LeaderboardUpdated
+
   close: CloseEvent
 }
 
@@ -37,10 +49,14 @@ export type WebSocketContextValue = {
     type: K,
     fn: (ev: SocketEvents[K]) => void,
   ) => () => void
-
   send: (ev: CreateSocketEvent) => void
 }
 
-export const WebSocketContext = createContext<WebSocketContextValue | null>(
-  null,
+const DEFAULT_WEBSOCKET_CONTEXT: WebSocketContextValue = {
+  subscribe: () => () => {},
+  send: () => {},
+}
+
+export const WebSocketContext = createContext<WebSocketContextValue>(
+  DEFAULT_WEBSOCKET_CONTEXT,
 )
