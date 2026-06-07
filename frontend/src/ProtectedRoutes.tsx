@@ -3,9 +3,8 @@ import { SessionContext } from './context/session/SessionContext'
 import { Navigate, Outlet } from 'react-router'
 
 export function ProtectedRoutes() {
-  const { hasSession } = useContext(SessionContext)
-
-  if (!hasSession()) {
+  const { session } = useContext(SessionContext)
+  if (session === null) {
     return <Navigate to="/login" replace />
   }
 

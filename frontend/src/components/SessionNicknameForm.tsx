@@ -1,9 +1,7 @@
 import { useContext, useState, type SubmitEvent } from 'react'
-import {
-  SessionContext,
-  type CreateUserSession,
-} from '../context/session/SessionContext'
+import { SessionContext } from '../context/session/SessionContext'
 import { useNavigate } from 'react-router'
+import type { CreateUserSession } from '../context/session/types'
 
 export function SessionNicknameForm() {
   const { onCreateSession } = useContext(SessionContext)

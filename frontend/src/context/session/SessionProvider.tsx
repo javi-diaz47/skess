@@ -19,7 +19,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const onCreateSession = (createSession: CreateUserSession) => {
-    if (hasSession()) return
+    if (session !== null) return
 
     const newSession: UserSession = {
       id: crypto.randomUUID(),
@@ -30,20 +30,15 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const onDeleteSession = () => {
-    if (!hasSession()) return
+    if (session === null) return
     setSession(null)
     localStorage.removeItem('session')
-  }
-
-  const hasSession = () => {
-    return session !== null
   }
 
   return (
     <SessionContext.Provider
       value={{
         session,
-        hasSession,
         onCreateSession,
         onDeleteSession,
       }}>
