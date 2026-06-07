@@ -1,12 +1,11 @@
 import { useContext, useEffect, useState } from 'react'
-import {
-  WebSocketContext,
-  type LeaderboardUpdated,
-  type UserAPI,
-  type UserWebSocket,
-} from '../context/WebSockets/WebsSocketsContext'
+import { WebSocketContext } from '../context/WebSockets/WebsSocketsContext'
 import { CHAT_COLORS } from '../contants/chatColors'
 import { SessionContext } from '../context/session/SessionContext'
+import type {
+  LeaderboardUpdated,
+  UserWebSocket,
+} from '../context/WebSockets/types'
 
 export function Leaderboard() {
   const { session } = useContext(SessionContext)
@@ -25,6 +24,10 @@ export function Leaderboard() {
     return () => {
       unsubLeaderboard()
     }
+
+    /* eslint-disable react-hooks/exhaustive-deps */
+    // session and subscribe are treated as invariants for the lifetime of this component.
+    // If the session changes, the user is redirected and this component unmounts.
   }, [])
 
   const topLeadersColors = (position: number) => {
@@ -69,12 +72,12 @@ export function Leaderboard() {
                     {i + 1}
                   </div>
                   <span
-                    className={`${session.id === user.id ? 'text-accent-400' : ''}`}>
+                    className={`${session?.id === user.id ? 'text-accent-400' : ''}`}>
                     {user.name}
                   </span>
                 </div>
                 <span
-                  className={`${session.id === user.id ? 'text-accent-400' : ''}`}>
+                  className={`${session?.id === user.id ? 'text-accent-400' : ''}`}>
                   {user.score}
                 </span>
               </li>

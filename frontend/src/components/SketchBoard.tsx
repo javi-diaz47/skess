@@ -1,8 +1,7 @@
-import { SKETCH_COLORS } from "../contants/sketchColors"
-import { useSketch } from "../hooks/useSketch"
+import { SKETCH_COLORS } from '../contants/sketchColors'
+import { useSketch } from '../hooks/useSketch'
 
 export function SketchBoard() {
-
   const {
     color,
     canvas,
@@ -32,17 +31,17 @@ export function SketchBoard() {
       </div>
       <div className="flex absolute bottom-5 gap-2 mt-2 px-4 py-2 bg-background-200 dark:bg-background-900 rounded-2xl w-fit shadow-2xl shadow-background-200 dark:shadow-background-900">
         {Object.entries(SKETCH_COLORS).map(([name, value]) => {
-          const c = value.base;
+          const c = value.base
 
           return (
             <button
               key={name}
               onClick={() => onChangeColor(c)}
-              className={`w-6 h-6 rounded-full ${color === c ? 'ring-3 ring-accent-500 border-1 border-primary-200' : ''}`}
+              className={`w-6 h-6 rounded-full ${color === c ? 'ring-3 ring-accent-500 border border-primary-200' : ''}`}
               style={{ backgroundColor: c }}
               title={name}
             />
-          );
+          )
         })}
       </div>
     </div>

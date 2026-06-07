@@ -1,12 +1,4 @@
-import {
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  type SubmitEvent,
-} from 'react'
-import { SessionContext } from '../context/session/SessionContext'
-import { CHAT_COLORS } from '../contants/chatColors'
+import { useEffect, useRef, useState, type SubmitEvent } from 'react'
 import { useChat } from '../hooks/useChat'
 
 export function ChatInput() {

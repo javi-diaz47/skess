@@ -5,18 +5,18 @@ import {
   useState,
   type PointerEvent,
 } from 'react'
-import {
-  WebSocketContext,
-  type Path,
-  type CreateSketchEvent,
-  type SketchEvent,
-} from '../context/WebSockets/WebsSocketsContext'
+import { WebSocketContext } from '../context/WebSockets/WebsSocketsContext'
 import { getSvgPathFromStroke } from '../utils/getSvgPathFromStroke'
 import getStroke from 'perfect-freehand'
 import { STROKE_OPTIONS } from '../contants/strokeOptions'
 import { SKETCH_COLORS } from '../contants/sketchColors'
 import { sessionToUserWebSocket } from '../utils/sessionToWebSocketUser'
-import type { GameStarted } from '../context/WebSockets/types'
+import type {
+  CreateSketchEvent,
+  GameStarted,
+  Path,
+  SketchEvent,
+} from '../context/WebSockets/types'
 
 export const useSketch = () => {
   const { subscribe, send } = useContext(WebSocketContext)

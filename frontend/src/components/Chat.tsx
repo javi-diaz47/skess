@@ -57,7 +57,7 @@ export function Chat() {
                       <span
                         className={`mr-2 font-bold ${CHAT_COLORS[item.sender.color]}`}>
                         {item.sender.name}
-                        {item.sender.id === session.id ? (
+                        {item.sender.id === session?.id ? (
                           <span className="text-[10px] md:text-xs"> (you)</span>
                         ) : (
                           ''
