@@ -1,4 +1,4 @@
-import type { UserSession } from '../context/SessionContext'
+import type { UserSession } from '../context/session/SessionContext'
 import type { UserWebSocket } from '../context/WebSockets/WebsSocketsContext'
 
 export const sessionToUserWebSocket = (session: UserSession): UserWebSocket => {

@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, type ReactNode } from 'react'
-import { SessionContext } from '../SessionContext'
+import { SessionContext } from '../session/SessionContext'
 import type {
   CreateGuessEvent,
   CreateSelectWord,

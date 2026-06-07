@@ -1,5 +1,5 @@
 import { useContext } from 'react'
-import { SessionContext } from '../context/SessionContext'
+import { SessionContext } from '../context/session/SessionContext'
 import { CHAT_COLORS } from '../contants/chatColors'
 import { useChat } from '../hooks/useChat'
 

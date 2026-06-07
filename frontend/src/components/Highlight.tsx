@@ -1,4 +1,3 @@
-
 interface Highlight {
   icon: React.ReactNode
   title: string
@@ -16,7 +15,5 @@ export function Highlight({ icon, title, desc }: Highlight) {
         <p className="text-s">{desc}</p>
       </div>
     </div>
-
-
   )
 }

@@ -6,7 +6,7 @@ import {
   type UserWebSocket,
 } from '../context/WebSockets/WebsSocketsContext'
 import { CHAT_COLORS } from '../contants/chatColors'
-import { SessionContext } from '../context/SessionContext'
+import { SessionContext } from '../context/session/SessionContext'
 
 export function Leaderboard() {
   const { session } = useContext(SessionContext)

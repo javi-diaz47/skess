@@ -4,7 +4,10 @@ import {
   type CreateGuessEvent,
   type GuessEvent,
 } from '../context/WebSockets/WebsSocketsContext'
-import { SessionContext, type UserSession } from '../context/SessionContext'
+import {
+  SessionContext,
+  type UserSession,
+} from '../context/session/SessionContext'
 import { sessionToUserWebSocket } from '../utils/sessionToWebSocketUser'
 import type { PlayerAbandoned } from '../context/WebSockets/types'
 

@@ -1,22 +1,21 @@
-import { useContext, useEffect, useState } from "react"
-import { WebSocketContext } from "../context/WebsSocketsContext"
+import { useContext, useEffect, useState } from 'react'
+import { WebSocketContext } from '../context/WebSockets/WebsSocketsContext'
 
 export function PlayButton() {
-
-  const [status, setStatus] = useState("")
+  const [status, setStatus] = useState('')
   const { send, subscribe } = useContext(WebSocketContext)
 
   const onPlay = () => {
     send({
-      type: "status",
+      type: 'status',
       payload: {
-        status: "start"
-      }
+        status: 'start',
+      },
     })
   }
 
   useEffect(() => {
-    const unsubStatus = subscribe("status", (ev) => {
+    const unsubStatus = subscribe('status', (ev) => {
       setStatus(ev.payload.status)
     })
     return () => {
@@ -27,7 +26,7 @@ export function PlayButton() {
   return (
     <button
       onClick={onPlay}
-      disabled={status !== "end"}
+      disabled={status !== 'end'}
       className="p-4 font-bold bg-accent-200 dark:bg-accent-600 cursor-pointer hover:scale-110 transition-transform active:scale-100 disabled:hover:scale-100 disabled:text-background-50  dark:disabled:text-background-800 disabled:bg-background-100 dark:disabled:bg-background-900">
       Play
     </button>

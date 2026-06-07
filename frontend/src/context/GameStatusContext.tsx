@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
 import {
   WebSocketContext,
   type GameStarted,
@@ -32,7 +39,7 @@ export const GameStatusContext = createContext<GameStatusContextValue | null>(
   null,
 )
 
-export const GameStatusProvider = ({ children }: { children: string }) => {
+export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
   const { subscribe } = useContext(WebSocketContext)
 
   const logoutAudio = useRef<HTMLAudioElement>(null)
