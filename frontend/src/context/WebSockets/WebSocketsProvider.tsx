@@ -1,10 +1,13 @@
-import { useContext, useEffect, useRef, type ReactNode } from 'react'
-import { SessionContext } from '../session/SessionContext'
 import {
-  WebSocketContext,
-  type CreateSocketEvent,
-  type SocketEvents,
-} from './WebsSocketsContext'
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  type ReactNode,
+} from 'react'
+import { SessionContext } from '../session/SessionContext'
+import { WebSocketContext } from './WebsSocketsContext'
+import type { CreateSocketEvent, SocketEvents } from './types'
 
 type SubscriberRegistry = {
   [K in keyof SocketEvents]: Set<(ev: SocketEvents[K]) => void>
@@ -39,18 +42,21 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
 
   const subscribers = useRef<SubscriberRegistry>(DEFAULT_SUBSCRIBER_REGISTRY)
 
-  const subscribe = <K extends keyof SocketEvents>(
-    type: K,
-    fn: (ev: SocketEvents[K]) => void,
-  ) => {
-    subscribers.current[type].add(fn)
+  const subscribe = useCallback(
+    <K extends keyof SocketEvents>(
+      type: K,
+      fn: (ev: SocketEvents[K]) => void,
+    ) => {
+      subscribers.current[type].add(fn)
 
-    return () => {
-      if (subscribers.current[type]) {
-        subscribers.current[type].delete(fn)
+      return () => {
+        if (subscribers.current[type]) {
+          subscribers.current[type].delete(fn)
+        }
       }
-    }
-  }
+    },
+    [subscribers],
+  )
 
   const onMessage = (ev: MessageEvent) => {
     const data = JSON.parse(ev.data)
@@ -70,10 +76,10 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
     subscribers.current['close']?.forEach((fn) => fn(ev))
   }
 
-  const send = (data: CreateSocketEvent) => {
+  const send = useCallback((data: CreateSocketEvent) => {
     if (ws.current === null) return
     ws.current.send(JSON.stringify(data))
-  }
+  }, [])
 
   useEffect(() => {
     if (session === null || ws.current !== null) return
