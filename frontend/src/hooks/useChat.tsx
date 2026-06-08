@@ -54,7 +54,7 @@ export const useChat = () => {
     )
 
     const unsubClose = subscribe('close', (ev) => {
-      if (ev.reason.length === 0) return
+      if (ev.reason.length === 0 || session === null) return
 
       const message: GuessEvent = {
         id: 'system-0',
