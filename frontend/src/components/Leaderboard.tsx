@@ -24,11 +24,7 @@ export function Leaderboard() {
     return () => {
       unsubLeaderboard()
     }
-
-    /* eslint-disable react-hooks/exhaustive-deps */
-    // session and subscribe are treated as invariants for the lifetime of this component.
-    // If the session changes, the user is redirected and this component unmounts.
-  }, [])
+  }, [session, subscribe])
 
   const topLeadersColors = (position: number) => {
     if (position == 1) return 'bg-amber-500 text-text-950'
@@ -64,7 +60,9 @@ export function Leaderboard() {
         <ul className="text-sm md:text-base">
           {leaderboard &&
             leaderboard.map((user, i) => (
-              <li className="flex items-center justify-between p-2">
+              <li
+                key={`${user.id}-${i}`}
+                className="flex items-center justify-between p-2">
                 <div
                   className={`mr-2 font-bold ${CHAT_COLORS[user.color]} flex gap-2 items-center`}>
                   <div

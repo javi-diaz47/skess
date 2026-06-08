@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -10,10 +11,8 @@ import { getSvgPathFromStroke } from '../utils/getSvgPathFromStroke'
 import getStroke from 'perfect-freehand'
 import { STROKE_OPTIONS } from '../contants/strokeOptions'
 import { SKETCH_COLORS } from '../contants/sketchColors'
-import { sessionToUserWebSocket } from '../utils/sessionToWebSocketUser'
 import type {
   CreateSketchEvent,
-  GameStarted,
   Path,
   SketchEvent,
 } from '../context/WebSockets/types'
@@ -67,12 +66,12 @@ export const useSketch = () => {
     points.current = []
     lastPath.current = ''
 
-    svgPath.current.setAttribute('fill', '')
+    svgPath.current?.setAttribute('fill', '')
     svgPath.current?.setAttribute('d', '')
   }
 
   const onPointerMove = (ev: PointerEvent<HTMLCanvasElement>) => {
-    if (!isPointerDown.current) return
+    if (!isPointerDown.current || canvas.current === null) return
 
     const rect = canvas.current.getBoundingClientRect()
     points.current.push([ev.clientX - rect.left, ev.clientY - rect.top])
@@ -82,7 +81,7 @@ export const useSketch = () => {
 
     lastPath.current = pathData
 
-    svgPath.current.setAttribute('fill', color)
+    svgPath.current?.setAttribute('fill', color)
     svgPath.current?.setAttribute('d', pathData)
 
     const normalizePoints = points.current.map((coor) => [
@@ -104,8 +103,33 @@ export const useSketch = () => {
     send(newEv)
   }
 
-  const sketch = () => {
-    const ctx = canvas.current.getContext('2d')
+  const scalePoints = useCallback((points: number[][]): number[][] => {
+    if (canvas.current === null) return []
+
+    const rect = canvas.current.getBoundingClientRect()
+    return points.map((coor) => [coor[0] * rect.width, coor[1] * rect.height])
+  }, [])
+
+  const normalizePoints = (points: number[][]): number[][] => {
+    if (canvas.current === null) return []
+
+    const rect = canvas.current.getBoundingClientRect()
+    return points.map((coor) => [coor[0] / rect.width, coor[1] / rect.height])
+  }
+
+  const createSvgPath = useCallback(
+    (points: number[][]): string => {
+      const scaledPoints = scalePoints(points)
+      const outlinePoints = getStroke(scaledPoints, STROKE_OPTIONS)
+      return getSvgPathFromStroke(outlinePoints)
+    },
+    [scalePoints],
+  )
+
+  const sketch = useCallback(() => {
+    if (canvas.current === null) return
+
+    const ctx = canvas.current.getContext('2d') as CanvasRenderingContext2D
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
 
     paths.forEach((cur) => {
@@ -118,23 +142,7 @@ export const useSketch = () => {
       ctx.fill(path)
       ctx.closePath()
     })
-  }
-
-  const scalePoints = (points: number[][]): number[][] => {
-    const rect = canvas.current.getBoundingClientRect()
-    return points.map((coor) => [coor[0] * rect.width, coor[1] * rect.height])
-  }
-
-  const normalizePoints = (points: number[][]): number[][] => {
-    const rect = canvas.current.getBoundingClientRect()
-    return points.map((coor) => [coor[0] / rect.width, coor[1] / rect.height])
-  }
-
-  const createSvgPath = (points: number[][]): string => {
-    const scaledPoints = scalePoints(points)
-    const outlinePoints = getStroke(scaledPoints, STROKE_OPTIONS)
-    return getSvgPathFromStroke(outlinePoints)
-  }
+  }, [paths, createSvgPath])
 
   useEffect(() => {
     if (canvas.current === null) return
@@ -145,13 +153,13 @@ export const useSketch = () => {
     canvas.current.width = rect.width * dpr
     canvas.current.height = rect.height * dpr
 
-    canvas.current.getContext('2d').scale(dpr, dpr)
+    canvas.current.getContext('2d')?.scale(dpr, dpr)
 
     const unsubSketch = subscribe('sketch', (data: SketchEvent) => {
       if (data.sketching) {
         // sketching
         const path = createSvgPath(data.path.points)
-        svgPath.current.setAttribute('fill', data.path.color)
+        svgPath.current?.setAttribute('fill', data.path.color)
         svgPath.current?.setAttribute('d', path)
       } else {
         // end sketch
@@ -159,7 +167,7 @@ export const useSketch = () => {
       }
     })
 
-    const unsubStarted = subscribe('game_started', (ev: GameStarted) => {
+    const unsubStarted = subscribe('game_started', () => {
       setPaths([])
     })
 
@@ -167,14 +175,14 @@ export const useSketch = () => {
       unsubSketch()
       unsubStarted()
     }
-  }, [])
+  }, [subscribe, createSvgPath])
 
   useEffect(() => {
     sketch()
 
-    svgPath.current.setAttribute('fill', '')
+    svgPath.current?.setAttribute('fill', '')
     svgPath.current?.setAttribute('d', '')
-  }, [paths])
+  }, [paths, sketch])
 
   return {
     color,

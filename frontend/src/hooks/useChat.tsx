@@ -73,11 +73,7 @@ export const useChat = () => {
       unsubPlayerAbandoned()
       unsubPlayerJoined()
     }
-
-    /* eslint-disable react-hooks/exhaustive-deps */
-    // session and subscribe are treated as invariants for the lifetime of this component.
-    // If the session changes, the user is redirected and this component unmounts.
-  }, [])
+  }, [session, subscribe])
 
   return {
     messages,
