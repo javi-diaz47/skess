@@ -13,4 +13,5 @@ INVALID_WEBSOCKET_MESSAGE = {
         },
         "select_word": {"event": {"type": "select_word", "word": "string"}},
     },
+    "received": None,
 }

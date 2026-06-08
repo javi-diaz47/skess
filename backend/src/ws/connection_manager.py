@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict, List
 from fastapi import WebSocket
+from src.ws.events.invalid_message import INVALID_WEBSOCKET_MESSAGE
 
 
 @dataclass(slots=True)
@@ -47,6 +48,11 @@ class ConnectionManager:
 
     async def send_personal_message(self, user_id: str, data):
         await self.active_conns[user_id].ws.send_json(data)
+
+    async def send_invalid_schema(self, user_id: str, data):
+        await self.active_conns[user_id].ws.send_json(
+            {**INVALID_WEBSOCKET_MESSAGE, "received": data}
+        )
 
     async def broadcast(self, data: Dict):
         for id in self.active_conns:

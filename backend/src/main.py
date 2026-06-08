@@ -9,8 +9,6 @@ from src.ws.events.client import (
     ClientSocketEvent,
 )
 from src.ws.events.server import ServerSketchEvent, ServerPlayerAbandonedEvent
-from src.ws.events.invalid_message import INVALID_WEBSOCKET_MESSAGE
-
 from src.application.orchestration import manager, game_rooms
 from uuid import uuid4
 import random
@@ -73,9 +71,7 @@ async def websocket_endpoint(
                         await manager.multicast(users_except_self, new_ev.model_dump())
 
             except ValidationError:
-                await manager.send_personal_message(
-                    conn.user.id, INVALID_WEBSOCKET_MESSAGE
-                )
+                await manager.send_invalid_schema(conn.user.id, data)
 
     except WebSocketDisconnect:
         game.remove_user(conn.user.id)
