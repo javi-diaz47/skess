@@ -13,6 +13,10 @@ export type Status = {
   max_turns: number | null
 }
 
+export interface GameStatusContextValue {
+  status: Status
+}
+
 export const DEFAULT_STATUS: Status = {
   state: 'pause',
   sketcher: null,

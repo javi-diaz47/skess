@@ -129,7 +129,7 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
 
       unsubHintRevealed()
     }
-  }, [])
+  }, [subscribe])
 
   return (
     <GameStatusContext.Provider value={{ status }}>

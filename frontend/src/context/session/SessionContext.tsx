@@ -1,18 +1,12 @@
 import { createContext } from 'react'
-import type { CreateUserSession, UserSession } from './types'
+import type { SessionContextValue } from './types'
 
-export interface SessionContext {
-  session: UserSession | null
-  onCreateSession: (newSession: CreateUserSession) => void
-  onDeleteSession: () => void
-}
-
-const DEFAULT_SESSION_CONTEXT: SessionContext = {
+const DEFAULT_SESSION_CONTEXT: SessionContextValue = {
   session: null,
   onCreateSession: () => {},
   onDeleteSession: () => {},
 }
 
-export const SessionContext = createContext<SessionContext>(
+export const SessionContext = createContext<SessionContextValue>(
   DEFAULT_SESSION_CONTEXT,
 )

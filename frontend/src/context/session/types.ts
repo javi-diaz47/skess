@@ -6,3 +6,9 @@ export interface UserSession {
 }
 
 export type CreateUserSession = Omit<UserSession, 'id' | 'color'>
+
+export interface SessionContextValue {
+  session: UserSession | null
+  onCreateSession: (newSession: CreateUserSession) => void
+  onDeleteSession: () => void
+}

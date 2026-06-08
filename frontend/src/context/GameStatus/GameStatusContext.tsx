@@ -1,12 +1,8 @@
 import { createContext } from 'react'
 
-import { DEFAULT_STATUS, type Status } from './types'
+import { DEFAULT_STATUS, type GameStatusContextValue } from './types'
 
-export type GameStatusContextValue = {
-  status: Status
-}
-
-const DEFAULT_STATUS_CONTEXT = {
+const DEFAULT_STATUS_CONTEXT: GameStatusContextValue = {
   status: DEFAULT_STATUS,
 }
 
