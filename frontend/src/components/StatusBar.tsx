@@ -12,16 +12,15 @@ export function StatusBar() {
   const { status } = useContext(GameStatusContext)
 
   useEffect(() => {
-    if (status?.state === 'guess') {
-      const timestamp = new Date(status?.timestamp * ONE_SECOND_IN_MILISECONDS)
+    if (status?.state === 'guess' && status.timestamp && status.guess_limit) {
+      const timestamp = new Date(status.timestamp * ONE_SECOND_IN_MILISECONDS)
       const now = new Date()
 
       const diff =
         (now.getTime() - timestamp.getTime()) / ONE_SECOND_IN_MILISECONDS
 
-      const leftTime = Math.round(status?.guess_limit - diff)
+      const leftTime = Math.round(status.guess_limit - diff)
 
-      console.log(leftTime, ' <- LEFT TIME')
       if (leftTime > 0) {
         startTimer(leftTime)
       }
@@ -30,7 +29,7 @@ export function StatusBar() {
     if (status?.state === 'end') {
       cancelTimer()
     }
-  }, [status])
+  }, [status, startTimer, cancelTimer])
 
   return (
     <section className="flex text-sm md:text-base text-text-900 dark:text-text-50 justify-between md:justify-center items-center gap-2 md:gap-8">

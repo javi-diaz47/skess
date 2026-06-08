@@ -1,11 +1,11 @@
 import { useContext, useEffect, useState } from 'react'
-import {
-  WebSocketContext,
-  type CreateSelectWord,
-  type WordSelectionStarted,
-} from '../context/WebSockets/WebsSocketsContext'
+import { WebSocketContext } from '../context/WebSockets/WebsSocketsContext'
 import { useTimer } from '../hooks/useTimer'
 import { Timer } from './Timer'
+import type {
+  CreateSelectWord,
+  WordSelectionStarted,
+} from '../context/WebSockets/types'
 
 export function WordSelector() {
   const [choose, setChoose] = useState<string[]>([])
@@ -45,10 +45,15 @@ export function WordSelector() {
       },
     )
 
+    const unsubGamePaused = subscribe('game_paused', () => {
+      setChoose([])
+    })
+
     return () => {
       unsubChoose()
+      unsubGamePaused()
     }
-  }, [])
+  }, [subscribe, startTimer])
 
   return (
     <div>

@@ -59,7 +59,7 @@ export function ChatInput() {
     <form
       onSubmit={onSubmit}
       className={`${keyboardOpen ? 'fixed bottom-[45%] left-0 right-0' : 'bottom-[2%]'} w-full md:static flex items-center justify-between gap-2`}>
-      <div className="min-w-0 flex-1 flex items-center justify-around bg-background-100 dark:bg-background-900 text-text-800 dark:text-text-100 rounded-full p-4 border-1 border-primary-500">
+      <div className="min-w-0 flex-1 flex items-center justify-around bg-background-100 dark:bg-background-900 text-text-800 dark:text-text-100 rounded-full p-4 border border-primary-500">
         <input
           ref={inp}
           value={input}
