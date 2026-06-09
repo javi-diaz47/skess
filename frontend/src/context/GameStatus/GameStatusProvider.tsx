@@ -57,6 +57,7 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
 
       setStatus((prev) => {
         return {
+          ...prev,
           state: prev?.state === 'pause' ? 'pause' : 'guess',
 
           sketcher: ev.sketcher,
@@ -99,6 +100,7 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
           state: prev?.state === 'pause' ? 'pause' : 'end',
           hint: ev.hint,
           word_letter_count: ev.word_letter_count,
+          turn_scores: ev.turn_scores,
           timestamp: ev.timestamp,
         }
       })

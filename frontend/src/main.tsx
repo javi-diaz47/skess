@@ -7,7 +7,7 @@ import { WebSocketProvider } from './context/WebSockets/WebSocketsProvider.tsx'
 import { Login } from './Login.tsx'
 import { Home } from './Home.tsx'
 import './index.css'
-import { GameStatusProvider } from './context/GameStatus/GameStatusContext copy.tsx'
+import { GameStatusProvider } from './context/GameStatus/GameStatusProvider.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

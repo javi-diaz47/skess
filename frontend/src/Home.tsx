@@ -5,6 +5,7 @@ import { WordSelector } from './components/WordSelector'
 import { Header } from './components/Header'
 import { StatusBar } from './components/StatusBar'
 import { ChatInput } from './components/ChatInput'
+import { TurnScores } from './components/TurnScores'
 
 export function Home() {
   return (
@@ -26,6 +27,7 @@ export function Home() {
         <SketchBoard />
         <div className="absolute left-1/2 top-1/2 -translate-1/2">
           <WordSelector />
+          <TurnScores />
         </div>
       </section>
 

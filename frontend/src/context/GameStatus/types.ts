@@ -11,6 +11,7 @@ export type Status = {
   max_rounds: number | null
   turn: number | null
   max_turns: number | null
+  turn_scores: UserWebSocket[]
 }
 
 export interface GameStatusContextValue {
@@ -28,4 +29,5 @@ export const DEFAULT_STATUS: Status = {
   max_rounds: null,
   turn: null,
   max_turns: null,
+  turn_scores: [],
 }
