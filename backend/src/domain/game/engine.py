@@ -52,6 +52,7 @@ class Game:
         self._hint = ""
 
         self._phase: GameState = IdleState(state=Phase.START, timestamp=None)
+        self._turn_scores: Leaderboard = Leaderboard(users)
         self._leaderboard: Leaderboard = Leaderboard(users)
         self._correct_guessers: Set[str] = set()
 
@@ -97,6 +98,7 @@ class Game:
     def add_user(self, user_id) -> None:
         self._users.append(user_id)
         self._leaderboard.add_user(user_id)
+        self._turn_scores.add_user(user_id)
         self._max_turns = len(self._users)
 
     def remove_user(self, user_id) -> None:
@@ -247,12 +249,11 @@ class Game:
         self._task_on_end = asyncio.create_task(self._schedule_end())
 
     def handle_guess(self, user_id: str, guess: str) -> None:
-        positions = self.guess(user_id, guess)
+        guessed = self.guess(user_id, guess)
 
         events: List[DomainEvent] = []
 
-        # user didn't guess correctly
-        if positions is None:
+        if not guessed:
             events.append(
                 PlayerGuessedIncorrectly(
                     type="player_guessed_incorrectly", user_id=user_id, message=guess
@@ -260,10 +261,6 @@ class Game:
             )
 
         else:
-            # user guessed correctly - update leaderboard
-            events.append(
-                LeaderboardUpdated(type="leaderboard_updated", leaderboard=positions),
-            )
             events.append(
                 PlayerGuessedCorrectly(
                     type="player_guessed_correctly",
@@ -279,7 +276,7 @@ class Game:
         if len(self._correct_guessers) == len(self._users) - 1:
             asyncio.create_task(self._schedule_end(wait=False))
 
-    def guess(self, user_id: str, guess: str) -> LeaderboardScores | None:
+    def guess(self, user_id: str, guess: str) -> bool:
         if self._phase.state != Phase.GUESS:
             return None
 
@@ -301,6 +298,8 @@ class Game:
             score = self._get_score(diff)
             self._guessers_time.append(score)
 
+            self._turn_scores.replace_score(user_id, score)
+
             if len(self._correct_guessers) == len(self._users) - 1:
                 if self._task_on_hint is not None:
                     self._task_on_hint.cancel()
@@ -308,9 +307,10 @@ class Game:
                 if self._task_on_end is not None:
                     self._task_on_end.cancel()
 
-            return self._leaderboard.update_score(user_id, score)
+            self._leaderboard.update_score(user_id, score)
+            return True
 
-        return None
+        return False
 
     def _get_score(self, t: int) -> int:
         return round(-(self._max_score * t / self._time_limits.guess) + self._max_score)
@@ -368,8 +368,7 @@ class Game:
                 word_letter_count=self.word_letter_count(),
                 guess_limit=self._time_limits.guess,
                 timestamp=timestamp,
-                # CHANGE IT
-                turn_scores=self._leaderboard.get_leaderboard(),
+                turn_scores=self._turn_scores.get_leaderboard(),
             ),
         ]
 
@@ -463,6 +462,7 @@ class Game:
         self._hint = ""
         self._sketcher_id = ""
         self._correct_guessers = set()
+        self._turn_scores.reset_scores()
 
         if self._current_turn >= self._max_turns:
             self._current_turn = 0
