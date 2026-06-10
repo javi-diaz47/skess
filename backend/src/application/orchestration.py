@@ -46,7 +46,8 @@ game_rooms = GameRooms(ROOM_NUMBER, MAX_ROOMS)
 def create_leaderboard(conns: Dict[str, Connection], positions: LeaderboardScores):
     leaderboard = []
     for user_id, score in positions:
-        conns[user_id].user.score = score
+        if user_id in conns:
+            conns[user_id].user.score = score
         if user_id in manager.active_conns:
             leaderboard.append(manager.active_conns[user_id].user)
     return leaderboard

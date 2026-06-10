@@ -391,7 +391,7 @@ class Game:
                 self._round_end = True
 
         asyncio.create_task(self.emit_event(events))
-
+        await asyncio.sleep(1.5)
         self.end()
 
     async def _schedule_hints(self) -> None:
