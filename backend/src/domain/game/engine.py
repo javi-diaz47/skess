@@ -8,6 +8,7 @@ from src.domain.game.constants import (
 )
 from src.domain.game.events import (
     DomainEvent,
+    GameEnded,
     GamePaused,
     GameUpdated,
     GameStarted,
@@ -16,6 +17,7 @@ from src.domain.game.events import (
     PlayerGuessedCorrectly,
     PlayerGuessedIncorrectly,
     PlayerJoined,
+    RoundEnded,
     TurnEnded,
     WordSelected,
     WordSelectionStarted,
@@ -361,37 +363,50 @@ class Game:
             LeaderboardUpdated(
                 type="leaderboard_updated", leaderboard=self.leaderboard
             ),
-            TurnEnded(
-                type="turn_ended",
-                sketcher_id=self._sketcher_id,
-                word=self._word,
-                word_letter_count=self.word_letter_count(),
-                guess_limit=self._time_limits.guess,
-                timestamp=timestamp,
-                turn_scores=self._turn_scores.get_leaderboard(),
-            ),
         ]
+
+        _game_ended = False
 
         if self._current_turn >= self._max_turns:
             self._current_turn = 0
 
             if 0 < self._current_round < self._max_rounds:
                 self._current_round += 1
-                #   Emit new Round Event
-                # Show points
-                # Show Leaderboard
-                # Show Finish Round
-                # return
+                # ROUND ENDED
 
             if self._current_round == self._max_rounds:
-                # Show points
-                # Show Finish Game
+                # GAME ENDED
                 self._current_round = 0
                 self._players_who_sketched = set()
                 self._round_end = True
 
+                _game_ended = True
+
+                events.append(
+                    GameEnded(
+                        type="game_ended",
+                        leaderboard=self._leaderboard.get_leaderboard(),
+                    )
+                )
+        else:
+            # TURN ENDED
+            events.append(
+                TurnEnded(
+                    type="turn_ended",
+                    sketcher_id=self._sketcher_id,
+                    word=self._word,
+                    word_letter_count=self.word_letter_count(),
+                    guess_limit=self._time_limits.guess,
+                    timestamp=timestamp,
+                    turn_scores=self._turn_scores.get_leaderboard(),
+                ),
+            )
+
         asyncio.create_task(self.emit_event(events))
-        await asyncio.sleep(1.5)
+        if _game_ended:
+            await asyncio.sleep(4)
+        else:
+            await asyncio.sleep(2)
         self.end()
 
     async def _schedule_hints(self) -> None:

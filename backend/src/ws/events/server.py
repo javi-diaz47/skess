@@ -36,6 +36,12 @@ class ServerTurnEndedEvent(ServerEvent):
     timestamp: float
 
 
+class ServerGameEndedEvent(ServerEvent):
+    type: Literal["game_ended"]
+
+    leaderboard: List[UserWebSocket]
+
+
 class ServerSketchEvent(ServerEvent):
     type: Literal["sketch"]
 

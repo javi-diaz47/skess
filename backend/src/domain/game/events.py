@@ -98,6 +98,7 @@ class TurnEnded:
 @dataclass(frozen=True, slots=True)
 class RoundEnded:
     type: Literal["round_ended"]
+    leaderboard: LeaderboardScores
 
 
 @dataclass(frozen=True, slots=True)

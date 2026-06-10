@@ -1,6 +1,7 @@
 from typing import Dict
 from src.domain.game.leaderboard import LeaderboardScores
 from src.domain.game.events import (
+    GameEnded,
     GamePaused,
     GameStarted,
     HintRevealed,
@@ -16,6 +17,7 @@ from src.domain.game.events import (
 from src.ws.connection_manager import Connection
 
 from src.ws.events.server import (
+    ServerGameEndedEvent,
     ServerGamePausedEvent,
     ServerGameStartedEvent,
     ServerGameUpdatedEvent,
@@ -280,6 +282,24 @@ async def turnEndedHandler(dispatch: DispatchEvent):
     await manager.multicast(players, end_ev.model_dump())
 
 
+async def gameEndedHandler(dispatch: DispatchEvent):
+    if not isinstance(dispatch.event, GameEnded):
+        return
+
+    ev = dispatch.event
+
+    leaderboard = create_leaderboard(manager.active_conns, ev.leaderboard)
+
+    end_ev = ServerGameEndedEvent(
+        id=str(uuid4()),
+        type="game_ended",
+        leaderboard=leaderboard,
+    )
+
+    players = game_rooms.rooms[dispatch.room_id].game.users
+    await manager.multicast(players, end_ev.model_dump())
+
+
 event_bus.subscribe("player_joined", playerJoinedHandler)
 event_bus.subscribe("word_selection_started", wordSelectionStartedHandler)
 event_bus.subscribe("game_started", gameStartedHandler)
@@ -291,3 +311,4 @@ event_bus.subscribe("hint_revealed", hintRevealedHandler)
 event_bus.subscribe("turn_ended", turnEndedHandler)
 event_bus.subscribe("game_updated", gameUpdatedHandler)
 event_bus.subscribe("game_paused", gamePausedHandler)
+event_bus.subscribe("game_ended", gameEndedHandler)
