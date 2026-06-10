@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useState } from 'react'
 import { WebSocketContext } from '../context/WebSockets/WebsSocketsContext'
 import { useTimer } from '../hooks/useTimer'
 import { Timer } from './Timer'
@@ -11,7 +11,9 @@ export function WordSelector() {
   const [choose, setChoose] = useState<string[]>([])
   const { subscribe, send } = useContext(WebSocketContext)
 
-  const automaticChooseWord = () => {
+  const automaticChooseWord = useCallback(() => {
+    if (choose.length === 0) return
+
     const newEv: CreateSelectWord = {
       type: 'select_word',
       word: choose[0],
@@ -19,7 +21,7 @@ export function WordSelector() {
     send(newEv)
 
     setChoose([])
-  }
+  }, [send, choose])
 
   const { time, startTimer, cancelTimer } = useTimer({
     onEndCallback: automaticChooseWord,
@@ -55,7 +57,6 @@ export function WordSelector() {
     }
   }, [subscribe, startTimer])
 
-  console.log(choose)
   return (
     <div className="z-10 absolute top-0  -translate-1/2">
       {choose && choose.length == 3 && (
