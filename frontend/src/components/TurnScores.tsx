@@ -6,19 +6,22 @@ export function TurnScores() {
   const { status } = useContext(GameStatusContext)
 
   return (
-    <div>
+    <div className="absolute top-0 -translate-1/2 min-w-72 max-w-96">
       {status.state === 'end' && (
-        <div className="max-w-xs flex flex-col items-center gap-8 p-8 rounded-4xl border-2 bg-background-50 dark:bg-background-900  border-background-200 dark:border-background-400 shadow-sm md:shadow-lg shadow-background-200 dark:shadow-background-400">
+        <div className="flex flex-col items-center gap-8 p-8 rounded-4xl border-2 bg-background-50 dark:bg-background-900  border-background-200 dark:border-background-400 shadow-sm md:shadow-lg shadow-background-200 dark:shadow-background-400">
           <h2 className="text-4xl font-bold text-center">Turn Scores</h2>
-          <ul className="text-lg w-full">
+          <ul className="text-lg w-full overflow-y-scroll max-h-96">
             {status.turn_scores.map((user) => (
               <li
                 key={`${user.id}-${user.score}`}
-                className="list-none w-full flex justify-between ">
-                <p className={`mr-2 font-bold ${CHAT_COLORS[user.color]}`}>
+                className="list-none w-full flex justify-between items-center">
+                <p
+                  className={`mr-2 min-w-0 wrap-break-word font-bold ${CHAT_COLORS[user.color]}`}>
                   {user.name}
                 </p>
-                <p className="text-accent-500 font-bold">+{user.score}</p>
+                <p className="shrink-0 text-accent-500 font-bold">
+                  +{user.score}
+                </p>
               </li>
             ))}
           </ul>

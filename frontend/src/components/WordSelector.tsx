@@ -55,8 +55,9 @@ export function WordSelector() {
     }
   }, [subscribe, startTimer])
 
+  console.log(choose)
   return (
-    <div>
+    <div className="z-10 absolute top-0  -translate-1/2">
       {choose && choose.length == 3 && (
         <div className="flex flex-col items-center gap-8 p-8 rounded-4xl border-2 bg-background-50 dark:bg-background-900  border-background-200 dark:border-background-400 shadow-sm md:shadow-lg shadow-background-200 dark:shadow-background-400">
           <h2 className="text-4xl font-bold text-center">Choose a word</h2>

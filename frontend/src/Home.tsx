@@ -25,9 +25,11 @@ export function Home() {
 
       <section className="relative col-span-2 md:row-span-1 md:col-span-2 lg:row-span-3 lg:col-span-1">
         <SketchBoard />
-        <div className="absolute left-1/2 top-1/2 -translate-1/2">
-          <WordSelector />
-          <TurnScores />
+        <div className="absolute left-1/2 top-1/2 -translate-1/2 bg-accent-300">
+          <div className="relative">
+            <WordSelector />
+            <TurnScores />
+          </div>
         </div>
       </section>
 
