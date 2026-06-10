@@ -1,5 +1,6 @@
 import { useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type {
+  GameEnded,
   GameStarted,
   GameUpdated,
   HintRevealed,
@@ -31,9 +32,9 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
     })
 
     const unsubGameStarted = subscribe('game_started', (ev: GameStarted) => {
-      setStatus((prev) => {
+      setStatus(() => {
         return {
-          ...prev,
+          ...DEFAULT_STATUS,
           state: 'start',
           round: ev.round,
           max_rounds: ev.max_rounds,
@@ -106,6 +107,16 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
       })
     })
 
+    const unsubGameEnded = subscribe('game_ended', (ev: GameEnded) => {
+      setStatus((prev) => {
+        return {
+          ...prev,
+          state: prev?.state === 'pause' ? 'pause' : 'end',
+          leaderboard: ev.leaderboard,
+        }
+      })
+    })
+
     const unsubHintRevealed = subscribe('hint_revealed', (ev: HintRevealed) => {
       setStatus((prev) => {
         return {
@@ -124,6 +135,7 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
       unsubGameStarted()
       unsubGamePaused()
       unsubGameUpdated()
+      unsubGameEnded()
 
       unsubWordSelected()
 

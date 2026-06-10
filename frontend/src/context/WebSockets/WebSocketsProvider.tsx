@@ -20,6 +20,7 @@ const DEFAULT_SUBSCRIBER_REGISTRY: SubscriberRegistry = {
   game_started: new Set(),
   game_paused: new Set(),
   game_updated: new Set(),
+  game_ended: new Set(),
 
   word_selection_started: new Set(),
   word_selected: new Set(),

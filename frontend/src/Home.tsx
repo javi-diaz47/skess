@@ -6,6 +6,7 @@ import { Header } from './components/Header'
 import { StatusBar } from './components/StatusBar'
 import { ChatInput } from './components/ChatInput'
 import { TurnScores } from './components/TurnScores'
+import { GameEnded } from './components/GameEnded'
 
 export function Home() {
   return (
@@ -29,6 +30,7 @@ export function Home() {
           <div className="relative">
             <WordSelector />
             <TurnScores />
+            <GameEnded />
           </div>
         </div>
       </section>

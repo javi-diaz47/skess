@@ -69,6 +69,12 @@ export type GameUpdated = SocketEvent & {
   leaderboard: UserWebSocket[]
 }
 
+export type GameEnded = SocketEvent & {
+  type: 'game_ended'
+
+  leaderboard: UserWebSocket[]
+}
+
 export type WordSelectionStarted = SocketEvent & {
   words: string[]
   timer: number
@@ -152,6 +158,7 @@ export type SocketEvents = {
   game_started: GameStarted
   game_paused: GamePaused
   game_updated: GameUpdated
+  game_ended: GameEnded
 
   word_selection_started: WordSelectionStarted
   word_selected: WordSelected
