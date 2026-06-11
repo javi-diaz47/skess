@@ -10,7 +10,6 @@ export function GameEnded() {
 
   const leaderboard = status.leaderboard.filter((_, i) => i >= 3)
 
-  console.log(top3)
   return (
     <div className="absolute top-0 -translate-1/2 overflow-hidden">
       {status.state === 'end' && status.leaderboard.length > 0 && (

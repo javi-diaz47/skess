@@ -22,7 +22,6 @@ export function ChatInput() {
     let counter = 0
     for (let i = 0; i < word.length; i++) {
       const code = word.charCodeAt(i)
-      console.log('z'.codePointAt(0))
       if ((code > 64 && code < 90) || (code > 96 && code < 123)) counter++
     }
     return counter

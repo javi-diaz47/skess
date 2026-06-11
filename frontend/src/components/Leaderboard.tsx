@@ -36,7 +36,7 @@ export function Leaderboard() {
 
   return (
     <div className="flex flex-col h-full min-h-0 flex-1">
-      <div className="flex-1 bg-background-100 dark:bg-background-900 overflow-y-scroll p-2 rounded-2xl">
+      <div className="flex-1 bg-background-100 dark:bg-background-900 overflow-y-auto p-2 rounded-2xl">
         <div className="flex items-center gap-2 mb-2">
           <svg
             className="w-5 h-5 text-accent-500"
