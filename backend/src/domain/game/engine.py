@@ -192,6 +192,8 @@ class Game:
         self._current_turn += 1
         self._players_who_sketched.add(self._sketcher_id)
 
+        timestamp = self.timestamp
+
         if self._round_end:
             self._current_round += 1
             self._round_end = False
@@ -201,7 +203,8 @@ class Game:
                 type="word_selection_started",
                 sketcher_id=self._sketcher_id,
                 words=self._words,
-                timer=self._time_limits.choose,
+                word_selection_timer=self._time_limits.choose,
+                timestamp=timestamp,
             ),
             GameStarted(
                 type="game_started",

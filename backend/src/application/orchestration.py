@@ -94,14 +94,19 @@ async def wordSelectionStartedHandler(dispatch: DispatchEvent) -> None:
 
     ev = dispatch.event
 
+    sketcher = manager.active_conns[ev.sketcher_id].user
+
     ws_ev = ServerWordSelectionStartedEvent(
         id=str(uuid4()),
         type="word_selection_started",
         words=ev.words,
-        timer=ev.timer,
+        word_selection_timer=ev.word_selection_timer,
+        timestamp=ev.timestamp,
+        sketcher=sketcher,
     )
 
-    await manager.send_message(ev.sketcher_id, ws_ev.model_dump())
+    players = game_rooms.rooms[dispatch.room_id].game.users
+    await manager.multicast(players, ws_ev.model_dump())
 
 
 async def gameStartedHandler(dispatch: DispatchEvent) -> None:

@@ -78,7 +78,11 @@ class ServerWordSelectionStartedEvent(ServerEvent):
     type: Literal["word_selection_started"]
 
     words: List[str]
-    timer: int
+
+    word_selection_timer: int
+    timestamp: float
+
+    sketcher: UserWebSocket
 
 
 class ServerWordSelectedEvent(ServerEvent):

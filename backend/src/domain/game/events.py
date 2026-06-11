@@ -18,7 +18,8 @@ class WordSelectionStarted:
     sketcher_id: str
     words: List[str]
 
-    timer: int
+    word_selection_timer: int
+    timestamp: float
 
 
 @dataclass(frozen=True, slots=True)
