@@ -6,6 +6,7 @@ import type {
   HintRevealed,
   TurnEnded,
   WordSelected,
+  WordSelectionStarted,
 } from '../WebSockets/types'
 import { DEFAULT_STATUS, type Status } from './types'
 import { WebSocketContext } from '../WebSockets/WebsSocketsContext'
@@ -32,10 +33,13 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
     })
 
     const unsubGameStarted = subscribe('game_started', (ev: GameStarted) => {
-      setStatus(() => {
+      setStatus((prev) => {
         return {
           ...DEFAULT_STATUS,
-          state: 'start',
+          state:
+            prev.state === 'pause' || prev.state === 'end'
+              ? 'start'
+              : prev.state,
           round: ev.round,
           max_rounds: ev.max_rounds,
           turn: ev.turn,
@@ -80,6 +84,21 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
         }
       })
     })
+
+    const unsubWordSelectionStarted = subscribe(
+      'word_selection_started',
+      (ev: WordSelectionStarted) => {
+        setStatus((prev) => {
+          return {
+            ...prev,
+            state: 'selection',
+            word_selection_timer: ev.word_selection_timer,
+            sketcher: ev.sketcher,
+            timestamp: ev.timestamp,
+          }
+        })
+      },
+    )
 
     const unsubWordSelected = subscribe('word_selected', (ev: WordSelected) => {
       setStatus((prev) => {
@@ -138,6 +157,7 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
       unsubGameUpdated()
       unsubGameEnded()
 
+      unsubWordSelectionStarted()
       unsubWordSelected()
 
       unsubTurnEnded()

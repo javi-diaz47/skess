@@ -1,8 +1,9 @@
 import type { UserWebSocket } from '../WebSockets/types'
 
 export type Status = {
-  state: 'start' | 'guess' | 'end' | 'hint' | 'pause'
+  state: 'start' | 'selection' | 'guess' | 'end' | 'hint' | 'pause'
   sketcher: UserWebSocket | null
+  word_selection_timer: number | null
   timestamp: number | null
   guess_limit: number | null
   hint: string | null
@@ -22,6 +23,7 @@ export interface GameStatusContextValue {
 export const DEFAULT_STATUS: Status = {
   state: 'pause',
   sketcher: null,
+  word_selection_timer: null,
   timestamp: null,
   guess_limit: null,
   hint: null,

@@ -78,8 +78,11 @@ export type GameEnded = SocketEvent & {
 }
 
 export type WordSelectionStarted = SocketEvent & {
+  type: 'word_selection_started'
   words: string[]
-  timer: number
+  word_selection_timer: number
+  timestamp: number
+  sketcher: UserWebSocket
 }
 
 export type SelectWord = SocketEvent & {
