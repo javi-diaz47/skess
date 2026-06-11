@@ -23,7 +23,7 @@ from src.ws.events.server import (
     ServerGameUpdatedEvent,
     ServerGuessEvent,
     ServerPlayerJoinedEvent,
-    ServerWordSelectionEvent,
+    ServerWordSelectionStartedEvent,
     ServerWordSelectedEvent,
     ServerLeaderboardUpdatedEvent,
     ServerHintRevealedEvent,
@@ -94,8 +94,11 @@ async def wordSelectionStartedHandler(dispatch: DispatchEvent) -> None:
 
     ev = dispatch.event
 
-    ws_ev = ServerWordSelectionEvent(
-        id=str(uuid4()), type="word_selection_started", words=ev.words, timer=ev.timer
+    ws_ev = ServerWordSelectionStartedEvent(
+        id=str(uuid4()),
+        type="word_selection_started",
+        words=ev.words,
+        timer=ev.timer,
     )
 
     await manager.send_message(ev.sketcher_id, ws_ev.model_dump())
@@ -107,6 +110,8 @@ async def gameStartedHandler(dispatch: DispatchEvent) -> None:
 
     ev = dispatch.event
 
+    sketcher = manager.active_conns[ev.sketcher_id].user
+
     new_ev = ServerGameStartedEvent(
         id=str(uuid4()),
         type="game_started",
@@ -114,6 +119,7 @@ async def gameStartedHandler(dispatch: DispatchEvent) -> None:
         max_rounds=ev.max_rounds,
         turn=ev.turn,
         max_turns=ev.max_turns,
+        sketcher=sketcher,
     )
 
     await manager.multicast(

@@ -209,6 +209,7 @@ class Game:
                 max_rounds=self._max_rounds,
                 turn=self._current_turn,
                 max_turns=self._max_turns,
+                sketcher_id=self._sketcher_id,
             ),
         ]
         asyncio.create_task(self.emit_event(events))

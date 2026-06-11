@@ -43,6 +43,8 @@ class GameStarted:
     turn: int
     max_turns: int
 
+    sketcher_id: str
+
 
 @dataclass(frozen=True, slots=True)
 class LeaderboardUpdated:

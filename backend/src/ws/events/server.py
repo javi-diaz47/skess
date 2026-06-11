@@ -74,7 +74,7 @@ class ServerGameUpdatedEvent(ServerEvent):
     leaderboard: List[UserWebSocket]
 
 
-class ServerWordSelectionEvent(ServerEvent):
+class ServerWordSelectionStartedEvent(ServerEvent):
     type: Literal["word_selection_started"]
 
     words: List[str]
@@ -100,6 +100,8 @@ class ServerGameStartedEvent(ServerEvent):
     max_rounds: int
     turn: int
     max_turns: int
+
+    sketcher: UserWebSocket
 
 
 class ServerLeaderboardUpdatedEvent(ServerEvent):
