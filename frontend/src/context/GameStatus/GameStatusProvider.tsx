@@ -40,6 +40,7 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
           max_rounds: ev.max_rounds,
           turn: ev.turn,
           max_turns: ev.max_turns,
+          sketcher: ev.sketcher,
         }
       })
     })

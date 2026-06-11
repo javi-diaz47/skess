@@ -38,6 +38,8 @@ export type GameStarted = SocketEvent & {
   max_rounds: number
   turn: number
   max_turns: number
+
+  sketcher: UserWebSocket
 }
 
 export type GamePaused = SocketEvent & {
