@@ -373,8 +373,7 @@ class Game:
             if 0 < self._current_round < self._max_rounds:
                 self._current_round += 1
                 # ROUND ENDED
-
-            if self._current_round == self._max_rounds:
+            elif self._current_round == self._max_rounds:
                 # GAME ENDED
                 self._current_round = 0
                 self._players_who_sketched = set()
@@ -479,18 +478,19 @@ class Game:
         self._correct_guessers = set()
         self._turn_scores.reset_scores()
 
-        if self._current_turn >= self._max_turns:
-            self._current_turn = 0
+        # if self._current_turn >= self._max_turns:
+        #    self._current_turn = 0
 
-            if 0 < self._current_round < self._max_rounds:
-                self._current_round += 1
-                #   Emit new Round Event
-                return
+        #    if 0 < self._current_round < self._max_rounds:
+        #        self._current_round += 1
+        #   Emit new Round Event
 
-            if self._current_round == self._max_rounds:
-                self._current_round = 0
-                self._players_who_sketched = set()
-                self._round_end = True
+    #         return
+
+    #     if self._current_round == self._max_rounds:
+    #         self._current_round = 0
+    #         self._players_who_sketched = set()
+    #         self._round_end = True
 
     def _now(self) -> dt.datetime:
         return dt.datetime.now(tz=dt.UTC)
