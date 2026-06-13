@@ -4,10 +4,10 @@ import { CHAT_COLORS } from '../contants/chatColors'
 
 export function TurnScores() {
   const { status } = useContext(GameStatusContext)
-  console.log(status.turn_scores.length, 'TUNR ENDED')
+
   return (
     <div className="absolute top-0 -translate-1/2 min-w-72 max-w-96">
-      {status.state === 'end' && status.turn_scores.length > 0 && (
+      {status.state === 'turn_end' && status.turn_scores.length > 0 && (
         <div
           className="
           flex flex-col items-center gap-8 p-8 rounded-4xl border-2 

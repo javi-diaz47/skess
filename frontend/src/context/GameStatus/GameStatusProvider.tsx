@@ -4,6 +4,7 @@ import type {
   GameStarted,
   GameUpdated,
   HintRevealed,
+  RoundEnded,
   TurnEnded,
   WordSelected,
   WordSelectionStarted,
@@ -118,11 +119,22 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
       setStatus((prev) => {
         return {
           ...prev,
-          state: prev?.state === 'pause' ? 'pause' : 'end',
+          state: prev?.state === 'pause' ? 'pause' : 'turn_end',
           hint: ev.hint,
           word_letter_count: ev.word_letter_count,
           turn_scores: ev.turn_scores,
           timestamp: ev.timestamp,
+        }
+      })
+    })
+
+    const unsubRoundEnded = subscribe('round_ended', (ev: RoundEnded) => {
+      setStatus((prev) => {
+        return {
+          ...prev,
+          state: prev?.state === 'pause' ? 'pause' : 'round_end',
+          round: ev.round,
+          max_rounds: ev.max_rounds,
         }
       })
     })
@@ -139,9 +151,11 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
 
     const unsubHintRevealed = subscribe('hint_revealed', (ev: HintRevealed) => {
       setStatus((prev) => {
+        if (prev.state !== 'guess') {
+          return prev
+        }
         return {
           ...prev,
-          state: prev?.state === 'pause' ? 'pause' : 'hint',
           hint: ev.hint,
           word_letter_count: ev.word_letter_count,
         }
@@ -161,6 +175,7 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
       unsubWordSelected()
 
       unsubTurnEnded()
+      unsubRoundEnded()
 
       unsubHintRevealed()
     }

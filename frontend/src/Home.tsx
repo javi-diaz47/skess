@@ -8,6 +8,7 @@ import { ChatInput } from './components/ChatInput'
 import { TurnScores } from './components/TurnScores'
 import { GameEnded } from './components/GameEnded'
 import { ChoosingWord } from './components/ChoosingWord'
+import { Round } from './components/Round'
 
 export function Home() {
   return (
@@ -29,6 +30,7 @@ export function Home() {
         <SketchBoard />
         <div className="absolute left-1/2 top-1/2 -translate-1/2 bg-accent-300">
           <div className="relative">
+            <Round />
             <ChoosingWord />
             <WordSelector />
             <TurnScores />

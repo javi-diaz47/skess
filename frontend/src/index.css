@@ -125,3 +125,33 @@ html:not([data-theme='dark']) {
   color: transparent;
   animation: shimmer 4s infinite linear;
 }
+
+@keyframes to-accent {
+  50% {
+    transform: scale(1.2);
+  }
+  to {
+    background: var(--color-accent-500);
+    transform: scale(1);
+  }
+}
+
+@keyframes to-primary {
+  25% {
+  }
+  50% {
+    transform: scale(0.8);
+  }
+  to {
+    background: var(--color-primary-500);
+    transform: scale(1);
+  }
+}
+
+.to-accent {
+  animation: to-accent 500ms forwards 1500ms ease-out;
+}
+
+.to-primary {
+  animation: to-primary 500ms forwards 1000ms ease-in;
+}

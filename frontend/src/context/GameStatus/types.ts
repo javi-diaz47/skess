@@ -1,7 +1,15 @@
 import type { UserWebSocket } from '../WebSockets/types'
 
 export type Status = {
-  state: 'start' | 'selection' | 'guess' | 'end' | 'hint' | 'pause'
+  state:
+    | 'start'
+    | 'selection'
+    | 'guess'
+    | 'end'
+    | 'hint'
+    | 'pause'
+    | 'turn_end'
+    | 'round_end'
   sketcher: UserWebSocket | null
   word_selection_timer: number | null
   timestamp: number | null

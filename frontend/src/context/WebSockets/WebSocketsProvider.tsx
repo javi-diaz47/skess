@@ -26,6 +26,7 @@ const DEFAULT_SUBSCRIBER_REGISTRY: SubscriberRegistry = {
   word_selected: new Set(),
 
   turn_ended: new Set(),
+  round_ended: new Set(),
 
   guess: new Set(),
   hint_revealed: new Set(),
@@ -66,7 +67,6 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
       console.error('[WebSocket]', 'Invalid message received', data)
       return
     }
-    console.log(data)
 
     subscribers.current[data.type as keyof SubscriberRegistry].forEach((fn) =>
       fn(data),

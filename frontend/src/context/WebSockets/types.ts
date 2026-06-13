@@ -151,6 +151,13 @@ export type TurnEnded = SocketEvent & {
   timestamp: number
 }
 
+export type RoundEnded = SocketEvent & {
+  type: 'round_ended'
+
+  round: number
+  max_rounds: number
+}
+
 export type LeaderboardUpdated = SocketEvent & {
   type: 'leaderboard_updated'
   leaderboard: UserWebSocket[]
@@ -173,6 +180,7 @@ export type SocketEvents = {
   hint_revealed: HintRevealed
 
   turn_ended: TurnEnded
+  round_ended: RoundEnded
 
   leaderboard_updated: LeaderboardUpdated
 
