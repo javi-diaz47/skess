@@ -377,18 +377,37 @@ class Game:
             if 0 < self._current_round < self._max_rounds:
                 self._current_round += 1
                 # ROUND ENDED
+                events.append(
+                    TurnEnded(
+                        type="turn_ended",
+                        sketcher_id=self._sketcher_id,
+                        word=self._word,
+                        word_letter_count=self.word_letter_count(),
+                        guess_limit=self._time_limits.guess,
+                        timestamp=timestamp,
+                        turn_scores=self._turn_scores.get_leaderboard(),
+                        cooldown=2,
+                    ),
+                )
+                events.append(
+                    RoundEnded(
+                        type="round_ended",
+                        round=self._current_round,
+                        max_rounds=self._max_rounds,
+                        cooldown=2,
+                    ),
+                )
             elif self._current_round == self._max_rounds:
                 # GAME ENDED
                 self._current_round = 0
                 self._players_who_sketched = set()
                 self._round_end = True
 
-                _game_ended = True
-
                 events.append(
                     GameEnded(
                         type="game_ended",
                         leaderboard=self._leaderboard.get_leaderboard(),
+                        cooldown=4,
                     )
                 )
         else:
@@ -402,14 +421,11 @@ class Game:
                     guess_limit=self._time_limits.guess,
                     timestamp=timestamp,
                     turn_scores=self._turn_scores.get_leaderboard(),
+                    cooldown=2,
                 ),
             )
 
-        asyncio.create_task(self.emit_event(events))
-        if _game_ended:
-            await asyncio.sleep(4)
-        else:
-            await asyncio.sleep(2)
+        await asyncio.create_task(self.emit_event(events))
         self.end()
 
     async def _schedule_hints(self) -> None:
@@ -470,9 +486,10 @@ class Game:
         av_score = sum(self._guessers_time) / total_guessers
         correct_guessers_ratio = len(self._correct_guessers) / total_guessers
 
-        score = av_score * correct_guessers_ratio * 0.8
+        score = round(av_score * correct_guessers_ratio * 0.8)
 
-        self._leaderboard.update_score(self._sketcher_id, round(score))
+        self._turn_scores.replace_score(self._sketcher_id, score)
+        self._leaderboard.update_score(self._sketcher_id, score)
 
     def _reset_round(self) -> None:
         self._word = ""

@@ -36,6 +36,13 @@ class ServerTurnEndedEvent(ServerEvent):
     timestamp: float
 
 
+class ServerRoundEndedEvent(ServerEvent):
+    type: Literal["round_ended"]
+
+    round: int
+    max_rounds: int
+
+
 class ServerGameEndedEvent(ServerEvent):
     type: Literal["game_ended"]
 

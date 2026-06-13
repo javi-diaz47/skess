@@ -97,11 +97,17 @@ class TurnEnded:
     timestamp: float
     guess_limit: int
 
+    cooldown: int
+
 
 @dataclass(frozen=True, slots=True)
 class RoundEnded:
     type: Literal["round_ended"]
-    leaderboard: LeaderboardScores
+
+    round: int
+    max_rounds: int
+
+    cooldown: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,6 +115,8 @@ class GameEnded:
     type: Literal["game_ended"]
 
     leaderboard: LeaderboardScores
+
+    cooldown: int
 
 
 @dataclass(frozen=True, slots=True)

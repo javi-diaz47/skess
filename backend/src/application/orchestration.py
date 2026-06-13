@@ -1,3 +1,4 @@
+from decimal import Rounded
 from typing import Dict
 from src.domain.game.leaderboard import LeaderboardScores
 from src.domain.game.events import (
@@ -10,6 +11,7 @@ from src.domain.game.events import (
     PlayerGuessedIncorrectly,
     PlayerJoined,
     GameUpdated,
+    RoundEnded,
     TurnEnded,
     WordSelected,
     WordSelectionStarted,
@@ -28,6 +30,7 @@ from src.ws.events.server import (
     ServerLeaderboardUpdatedEvent,
     ServerHintRevealedEvent,
     ServerTurnEndedEvent,
+    ServerRoundEndedEvent,
 )
 from src.application.event_bus import DispatchEvent
 
@@ -292,6 +295,24 @@ async def turnEndedHandler(dispatch: DispatchEvent):
     players = game_rooms.rooms[dispatch.room_id].game.users
     await manager.multicast(players, end_ev.model_dump())
 
+    await asyncio.sleep(ev.cooldown)
+
+
+async def roundEndedHandler(dispatch: DispatchEvent):
+    if not isinstance(dispatch.event, RoundEnded):
+        return
+
+    ev = dispatch.event
+
+    end_ev = ServerRoundEndedEvent(
+        id=str(uuid4()), type="round_ended", round=ev.round, max_rounds=ev.max_rounds
+    )
+
+    players = game_rooms.rooms[dispatch.room_id].game.users
+    await manager.multicast(players, end_ev.model_dump())
+
+    await asyncio.sleep(ev.cooldown)
+
 
 async def gameEndedHandler(dispatch: DispatchEvent):
     if not isinstance(dispatch.event, GameEnded):
@@ -310,6 +331,8 @@ async def gameEndedHandler(dispatch: DispatchEvent):
     players = game_rooms.rooms[dispatch.room_id].game.users
     await manager.multicast(players, end_ev.model_dump())
 
+    await asyncio.sleep(ev.cooldown)
+
 
 event_bus.subscribe("player_joined", playerJoinedHandler)
 event_bus.subscribe("word_selection_started", wordSelectionStartedHandler)
@@ -323,3 +346,4 @@ event_bus.subscribe("turn_ended", turnEndedHandler)
 event_bus.subscribe("game_updated", gameUpdatedHandler)
 event_bus.subscribe("game_paused", gamePausedHandler)
 event_bus.subscribe("game_ended", gameEndedHandler)
+event_bus.subscribe("round_ended", roundEndedHandler)
