@@ -5,7 +5,6 @@ export function Round() {
   const { status } = useContext(GameStatusContext)
 
   const getDotColor = (index: number): string => {
-    console.log(index, status.round)
     if (!status.round) return ''
     if (index + 1 === status.round) return 'to-accent bg-primary-500'
     if (index + 1 === status.round - 1) return 'to-primary bg-accent-500'

@@ -149,9 +149,9 @@ html:not([data-theme='dark']) {
 }
 
 .to-accent {
-  animation: to-accent 500ms forwards 1500ms ease-out;
+  animation: to-accent 500ms forwards 600ms ease-out;
 }
 
 .to-primary {
-  animation: to-primary 500ms forwards 1000ms ease-in;
+  animation: to-primary 500ms forwards 100ms ease-in;
 }

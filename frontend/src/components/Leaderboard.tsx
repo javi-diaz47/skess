@@ -62,9 +62,9 @@ export function Leaderboard() {
             leaderboard.map((user, i) => (
               <li
                 key={`${user.id}-${i}`}
-                className="flex items-center justify-between p-2">
+                className="flex items-center justify-between p-2 font-bold">
                 <div
-                  className={`mr-2 font-bold ${CHAT_COLORS[user.color]} flex gap-2 items-center`}>
+                  className={`mr-2 ${CHAT_COLORS[user.color]} flex gap-2 items-center`}>
                   <div
                     className={`${topLeadersColors(i + 1)} rounded-full w-6 h-6 flex justify-center items-center`}>
                     {i + 1}

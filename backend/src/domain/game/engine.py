@@ -214,6 +214,10 @@ class Game:
                 max_turns=self._max_turns,
                 sketcher_id=self._sketcher_id,
             ),
+            LeaderboardUpdated(
+                type="leaderboard_updated",
+                leaderboard=self._leaderboard.get_leaderboard(),
+            ),
         ]
         asyncio.create_task(self.emit_event(events))
 
@@ -408,7 +412,15 @@ class Game:
                         type="game_ended",
                         leaderboard=self._leaderboard.get_leaderboard(),
                         cooldown=4,
-                    )
+                    ),
+                )
+                events.append(
+                    RoundEnded(
+                        type="round_ended",
+                        round=1,
+                        max_rounds=self._max_rounds,
+                        cooldown=2,
+                    ),
                 )
         else:
             # TURN ENDED
@@ -498,6 +510,7 @@ class Game:
         self._sketcher_id = ""
         self._correct_guessers = set()
         self._turn_scores.reset_scores()
+        self._leaderboard.reset_scores()
 
         # if self._current_turn >= self._max_turns:
         #    self._current_turn = 0

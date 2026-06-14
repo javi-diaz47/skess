@@ -37,7 +37,7 @@ export function SketchBoard() {
             <button
               key={name}
               onClick={() => onChangeColor(c)}
-              className={`w-6 h-6 rounded-full ${color === c ? 'ring-3 ring-accent-500 border border-primary-200' : ''}`}
+              className={`w-6 h-6 rounded-full hover:cursor-pointer ${color === c ? 'ring-3 ring-accent-500 border border-primary-200' : ''}`}
               style={{ backgroundColor: c }}
               title={name}
             />

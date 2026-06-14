@@ -46,6 +46,8 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
           turn: ev.turn,
           max_turns: ev.max_turns,
           sketcher: ev.sketcher,
+          hint: prev.hint,
+          word_letter_count: prev.word_letter_count,
         }
       })
     })
@@ -60,8 +62,6 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
     })
 
     const unsubGameUpdated = subscribe('game_updated', (ev: GameUpdated) => {
-      console.log('GAME UPDATED', ev)
-
       setStatus((prev) => {
         return {
           ...prev,
