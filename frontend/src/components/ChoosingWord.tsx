@@ -78,7 +78,7 @@ export function ChoosingWord() {
                 className="bg-background-100 dark:bg-background-800"
               />
 
-              <p className="text-lg text-text-100">
+              <p className="text-lg text-text-950 dark:text-text-100">
                 Everyone, get ready to{' '}
                 <span className="text-accent-500">guess!</span>
               </p>

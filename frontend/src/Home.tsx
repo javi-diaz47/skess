@@ -9,8 +9,11 @@ import { TurnScores } from './components/TurnScores'
 import { GameEnded } from './components/GameEnded'
 import { ChoosingWord } from './components/ChoosingWord'
 import { Round } from './components/Round'
+import { useContext } from 'react'
+import { GameStatusContext } from './context/GameStatus/GameStatusContext'
 
 export function Home() {
+  const { status } = useContext(GameStatusContext)
   return (
     <main
       className="w-full max-w-7xl grid p-2
@@ -27,7 +30,7 @@ export function Home() {
       </section>
 
       <section className="relative col-span-2 md:row-span-1 md:col-span-2 lg:row-span-3 lg:col-span-1">
-        <SketchBoard />
+        <SketchBoard key={status.state} />
         <div className="absolute left-1/2 top-1/2 -translate-1/2 bg-accent-300">
           <div className="relative">
             <Round />

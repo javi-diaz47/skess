@@ -51,7 +51,9 @@ export function Round() {
               <span>is starting!</span>
             </h2>
           </div>
-          <p className="text-lg text-text-100">Get ready for a new word</p>
+          <p className="text-lg text-text-950 dark:text-text-100">
+            Get ready for a new word
+          </p>
           <div className="flex gap-4">
             {Array(status.max_rounds)
               .fill(0)

@@ -16,9 +16,13 @@ import type {
   Path,
   SketchEvent,
 } from '../context/WebSockets/types'
+import { SessionContext } from '../context/session/SessionContext'
+import { GameStatusContext } from '../context/GameStatus/GameStatusContext'
 
 export const useSketch = () => {
   const { subscribe, send } = useContext(WebSocketContext)
+  const { session } = useContext(SessionContext)
+  const { status } = useContext(GameStatusContext)
 
   const [paths, setPaths] = useState<Path[]>([])
   const [color, setColor] = useState(SKETCH_COLORS['black']['base'])
@@ -35,6 +39,13 @@ export const useSketch = () => {
   }
 
   const onPointerDown = (ev: PointerEvent<HTMLCanvasElement>) => {
+    if (
+      canvas.current === null ||
+      session?.id !== status.sketcher?.id ||
+      status.state !== 'guess'
+    )
+      return
+
     isPointerDown.current = true
     ev.currentTarget.setPointerCapture(ev.pointerId)
   }
@@ -43,7 +54,12 @@ export const useSketch = () => {
     isPointerDown.current = false
     ev.currentTarget.releasePointerCapture(ev.pointerId)
 
-    if (!canvas.current) return
+    if (
+      canvas.current === null ||
+      session?.id !== status.sketcher?.id ||
+      status.state !== 'guess'
+    )
+      return
 
     //const newPath = new Path2D(lastPath.current)
 
@@ -71,7 +87,13 @@ export const useSketch = () => {
   }
 
   const onPointerMove = (ev: PointerEvent<HTMLCanvasElement>) => {
-    if (!isPointerDown.current || canvas.current === null) return
+    if (
+      !isPointerDown.current ||
+      canvas.current === null ||
+      session?.id !== status.sketcher?.id ||
+      status.state !== 'guess'
+    )
+      return
 
     const rect = canvas.current.getBoundingClientRect()
     points.current.push([ev.clientX - rect.left, ev.clientY - rect.top])
