@@ -1,34 +1,23 @@
-import { useContext, useEffect, useRef } from 'react'
+import { useContext, useEffect } from 'react'
 import { useTimer } from '../hooks/useTimer'
 import { ONE_SECOND_IN_MILISECONDS } from '../contants/secondsToMiliseconds'
 import { Timer } from './Timer'
 import { GameStatusContext } from '../context/GameStatus/GameStatusContext'
 import { CHAT_COLORS } from '../contants/chatColors'
 import { LoaderAnimation } from './LoaderAnimation'
+import { SoundFxContext } from '../context/SoundFX/SoundFXContext'
 
 export function StatusBar() {
   const { time, startTimer, cancelTimer } = useTimer()
 
   const { status } = useContext(GameStatusContext)
-
-  const timerAudio = useRef<HTMLAudioElement>(null)
-
-  const stopTimerAudio = () => {
-    timerAudio.current?.pause()
-    if (timerAudio.current) {
-      timerAudio.current.currentTime = 0
-    }
-  }
-
-  useEffect(() => {
-    timerAudio.current = new Audio('/sounds/timer.mp3')
-  }, [])
+  const { play, pause } = useContext(SoundFxContext)
 
   useEffect(() => {
     if (time === 4) {
-      timerAudio.current?.play()
+      play('timer')
     }
-  }, [time])
+  }, [time, play])
 
   useEffect(() => {
     if (status?.state === 'guess' && status.timestamp && status.guess_limit) {
@@ -47,9 +36,9 @@ export function StatusBar() {
 
     if (status?.state === 'turn_end' || status?.state === 'end') {
       cancelTimer()
-      stopTimerAudio()
+      pause('timer')
     }
-  }, [status, startTimer, cancelTimer])
+  }, [status, startTimer, cancelTimer, pause])
 
   return (
     <section className="flex text-sm md:text-base text-text-900 dark:text-text-50 justify-between md:justify-center items-center gap-2 md:gap-8">

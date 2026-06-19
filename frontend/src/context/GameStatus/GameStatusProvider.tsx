@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useContext, useEffect, useState, type ReactNode } from 'react'
 import type {
   GameEnded,
   GameStarted,
@@ -12,29 +12,21 @@ import type {
 import { DEFAULT_STATUS, type Status } from './types'
 import { WebSocketContext } from '../WebSockets/WebsSocketsContext'
 import { GameStatusContext } from './GameStatusContext'
+import { SoundFxContext } from '../SoundFX/SoundFXContext'
 
 export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
   const { subscribe } = useContext(WebSocketContext)
-
-  const logoutAudio = useRef<HTMLAudioElement>(null)
-  const loginAudio = useRef<HTMLAudioElement>(null)
-  const startAudio = useRef<HTMLAudioElement>(null)
-  const endAudio = useRef<HTMLAudioElement>(null)
+  const { play } = useContext(SoundFxContext)
 
   const [status, setStatus] = useState<Status>(DEFAULT_STATUS)
 
   useEffect(() => {
-    loginAudio.current = new Audio('/sounds/player-join.mp3')
-    logoutAudio.current = new Audio('/sounds/player-leave.mp3')
-    startAudio.current = new Audio('/sounds/start-round.mp3')
-    endAudio.current = new Audio('/sounds/end-game.mp3')
-
     const unsubPlayerAbandoned = subscribe('player_abandoned', () => {
-      logoutAudio.current?.play()
+      play('player-leave')
     })
 
     const unsubPlayerJoined = subscribe('player_joined', () => {
-      loginAudio.current?.play()
+      play('player-join')
     })
 
     const unsubGameStarted = subscribe('game_started', (ev: GameStarted) => {
@@ -106,7 +98,7 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
     )
 
     const unsubWordSelected = subscribe('word_selected', (ev: WordSelected) => {
-      startAudio.current?.play()
+      play('start-round')
       setStatus((prev) => {
         return {
           ...prev,
@@ -145,7 +137,7 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
     })
 
     const unsubGameEnded = subscribe('game_ended', (ev: GameEnded) => {
-      endAudio.current?.play()
+      play('end-game')
       setStatus((prev) => {
         return {
           ...prev,
@@ -185,7 +177,7 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
 
       unsubHintRevealed()
     }
-  }, [subscribe])
+  }, [play, subscribe])
 
   return (
     <GameStatusContext.Provider value={{ status }}>

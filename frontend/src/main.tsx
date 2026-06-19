@@ -6,24 +6,27 @@ import { SessionProvider } from './context/session/SessionProvider.tsx'
 import { WebSocketProvider } from './context/WebSockets/WebSocketsProvider.tsx'
 import { Login } from './Login.tsx'
 import { Home } from './Home.tsx'
-import './index.css'
 import { GameStatusProvider } from './context/GameStatus/GameStatusProvider.tsx'
+import { SoundFxProvider } from './context/SoundFX/SoundFXProvider.tsx'
+import './index.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <SessionProvider>
       <WebSocketProvider>
-        <GameStatusProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<Login />} />
+        <SoundFxProvider>
+          <GameStatusProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/login" element={<Login />} />
 
-              <Route element={<ProtectedRoutes />}>
-                <Route path="/" element={<Home />} />
-              </Route>
-            </Routes>
-          </BrowserRouter>
-        </GameStatusProvider>
+                <Route element={<ProtectedRoutes />}>
+                  <Route path="/" element={<Home />} />
+                </Route>
+              </Routes>
+            </BrowserRouter>
+          </GameStatusProvider>
+        </SoundFxProvider>
       </WebSocketProvider>
     </SessionProvider>
   </StrictMode>,
