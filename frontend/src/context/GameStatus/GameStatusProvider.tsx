@@ -18,12 +18,16 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
 
   const logoutAudio = useRef<HTMLAudioElement>(null)
   const loginAudio = useRef<HTMLAudioElement>(null)
+  const startAudio = useRef<HTMLAudioElement>(null)
+  const endAudio = useRef<HTMLAudioElement>(null)
 
   const [status, setStatus] = useState<Status>(DEFAULT_STATUS)
 
   useEffect(() => {
     loginAudio.current = new Audio('/sounds/player-join.mp3')
     logoutAudio.current = new Audio('/sounds/player-leave.mp3')
+    startAudio.current = new Audio('/sounds/start-round.mp3')
+    endAudio.current = new Audio('/sounds/end-game.mp3')
 
     const unsubPlayerAbandoned = subscribe('player_abandoned', () => {
       logoutAudio.current?.play()
@@ -102,6 +106,7 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
     )
 
     const unsubWordSelected = subscribe('word_selected', (ev: WordSelected) => {
+      startAudio.current?.play()
       setStatus((prev) => {
         return {
           ...prev,
@@ -140,6 +145,7 @@ export const GameStatusProvider = ({ children }: { children: ReactNode }) => {
     })
 
     const unsubGameEnded = subscribe('game_ended', (ev: GameEnded) => {
+      endAudio.current?.play()
       setStatus((prev) => {
         return {
           ...prev,

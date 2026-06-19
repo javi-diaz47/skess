@@ -1,4 +1,4 @@
-import { useContext, useEffect } from 'react'
+import { useContext, useEffect, useRef } from 'react'
 import { useTimer } from '../hooks/useTimer'
 import { ONE_SECOND_IN_MILISECONDS } from '../contants/secondsToMiliseconds'
 import { Timer } from './Timer'
@@ -10,6 +10,25 @@ export function StatusBar() {
   const { time, startTimer, cancelTimer } = useTimer()
 
   const { status } = useContext(GameStatusContext)
+
+  const timerAudio = useRef<HTMLAudioElement>(null)
+
+  const stopTimerAudio = () => {
+    timerAudio.current?.pause()
+    if (timerAudio.current) {
+      timerAudio.current.currentTime = 0
+    }
+  }
+
+  useEffect(() => {
+    timerAudio.current = new Audio('/sounds/timer.mp3')
+  }, [])
+
+  useEffect(() => {
+    if (time === 4) {
+      timerAudio.current?.play()
+    }
+  }, [time])
 
   useEffect(() => {
     if (status?.state === 'guess' && status.timestamp && status.guess_limit) {
@@ -26,8 +45,9 @@ export function StatusBar() {
       }
     }
 
-    if (status?.state === 'end') {
+    if (status?.state === 'turn_end' || status?.state === 'end') {
       cancelTimer()
+      stopTimerAudio()
     }
   }, [status, startTimer, cancelTimer])
 
