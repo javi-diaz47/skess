@@ -12,15 +12,17 @@ export type SoundsFx = {
 }
 
 interface SoundFxContext {
+  volume: number
   play: (fx: Sounds) => void
   pause: (fx: Sounds) => void
-  setVolume: (newVolume: number) => void
+  updateVolume: (newVolume: number) => void
 }
 
 const DEFAULT_SOUND_FX_CONTEXT = {
+  volume: 0,
   play: () => {},
   pause: () => {},
-  setVolume: () => {},
+  updateVolume: () => {},
 }
 
 export const SoundFxContext = createContext<SoundFxContext>(
