@@ -30,6 +30,8 @@ const DEFAULT_SUBSCRIBER_REGISTRY: SubscriberRegistry = {
 
   guess: new Set(),
   hint_revealed: new Set(),
+
+  sketch_path: new Set(),
   sketch: new Set(),
 
   leaderboard_updated: new Set(),

@@ -50,6 +50,11 @@ export type GamePaused = SocketEvent & {
   message: string
 }
 
+export interface Path {
+  points: number[][]
+  color: string
+}
+
 export type GameUpdated = SocketEvent & {
   type: 'game_updated'
 
@@ -69,6 +74,8 @@ export type GameUpdated = SocketEvent & {
   guess_limit: number
 
   leaderboard: UserWebSocket[]
+
+  sketch: Path[]
 }
 
 export type GameEnded = SocketEvent & {
@@ -105,13 +112,8 @@ export type WordSelected = SocketEvent & {
   timestamp: number
 }
 
-export interface Path {
-  points: number[][]
-  color: string
-}
-
-export type SketchEvent = SocketEvent & {
-  type: 'sketch'
+export type SketchPathEvent = SocketEvent & {
+  type: 'sketch_path'
 
   path: Path
 
@@ -119,6 +121,14 @@ export type SketchEvent = SocketEvent & {
 
   sender: UserWebSocket
 }
+
+export type SketchEvent = SocketEvent & {
+  type: 'sketch'
+  sketch: Path[]
+  sender: UserWebSocket
+}
+
+export type CreateSketchPathEvent = Omit<SketchPathEvent, 'id' | 'sender'>
 
 export type CreateSketchEvent = Omit<SketchEvent, 'id' | 'sender'>
 
@@ -175,7 +185,9 @@ export type SocketEvents = {
   word_selection_started: WordSelectionStarted
   word_selected: WordSelected
 
+  sketch_path: SketchPathEvent
   sketch: SketchEvent
+
   guess: GuessEvent
   hint_revealed: HintRevealed
 
@@ -189,6 +201,7 @@ export type SocketEvents = {
 
 export type CreateSocketEvent =
   | CreateGuessEvent
+  | CreateSketchPathEvent
   | CreateSketchEvent
   | CreateSelectWord
 

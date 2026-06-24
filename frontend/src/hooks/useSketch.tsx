@@ -12,9 +12,11 @@ import getStroke from 'perfect-freehand'
 import { STROKE_OPTIONS } from '../contants/strokeOptions'
 import { SKETCH_COLORS } from '../contants/sketchColors'
 import type {
+  CreateSketchPathEvent,
   CreateSketchEvent,
   Path,
   SketchEvent,
+  SketchPathEvent,
 } from '../context/WebSockets/types'
 import { SessionContext } from '../context/session/SessionContext'
 import { GameStatusContext } from '../context/GameStatus/GameStatusContext'
@@ -70,8 +72,8 @@ export const useSketch = () => {
 
     setPaths((prev) => [...prev, newPath])
 
-    const newEv: CreateSketchEvent = {
-      type: 'sketch',
+    const newEv: CreateSketchPathEvent = {
+      type: 'sketch_path',
 
       path: newPath,
 
@@ -116,8 +118,8 @@ export const useSketch = () => {
       color,
     }
 
-    const newEv: CreateSketchEvent = {
-      type: 'sketch',
+    const newEv: CreateSketchPathEvent = {
+      type: 'sketch_path',
       sketching: true,
       path: sketchingPath,
     }
@@ -166,6 +168,18 @@ export const useSketch = () => {
     })
   }, [paths, createSvgPath])
 
+  const undo = useCallback(() => {
+    const sketch = paths.slice(0, paths.length - 1)
+
+    const newEv: CreateSketchEvent = {
+      type: 'sketch',
+      sketch,
+    }
+
+    send(newEv)
+    setPaths(sketch)
+  }, [paths, send])
+
   useEffect(() => {
     if (canvas.current === null) return
 
@@ -177,7 +191,11 @@ export const useSketch = () => {
 
     canvas.current.getContext('2d')?.scale(dpr, dpr)
 
-    const unsubSketch = subscribe('sketch', (data: SketchEvent) => {
+    const unsub = subscribe('sketch', (data: SketchEvent) => {
+      setPaths(() => data.sketch)
+    })
+
+    const unsubSketch = subscribe('sketch_path', (data: SketchPathEvent) => {
       if (data.sketching) {
         // sketching
         const path = createSvgPath(data.path.points)
@@ -193,9 +211,15 @@ export const useSketch = () => {
       setPaths([])
     })
 
+    const unsubUpdated = subscribe('game_updated', (ev) => {
+      setPaths(ev.sketch)
+    })
+
     return () => {
       unsubSketch()
       unsubStarted()
+      unsub()
+      unsubUpdated()
     }
   }, [subscribe, createSvgPath])
 
@@ -216,5 +240,8 @@ export const useSketch = () => {
     onPointerDown,
     onPointerUp,
     onPointerMove,
+
+    undo,
+    canUndo: Boolean(paths.length),
   }
 }
