@@ -1,3 +1,5 @@
+from typing import Dict, List
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 from src.utils.colors import COLORS
@@ -6,9 +8,14 @@ from src.ws.events.client import (
     ClientGuessEvent,
     ClientSelectWordEvent,
     ClientSketchEvent,
+    ClientSketchPathEvent,
     ClientSocketEvent,
 )
-from src.ws.events.server import ServerSketchEvent, ServerPlayerAbandonedEvent
+from src.ws.events.server import (
+    ServerSketchEvent,
+    ServerPlayerAbandonedEvent,
+    ServerSketchPathEvent,
+)
 from src.application.orchestration import manager, game_rooms
 from uuid import uuid4
 import random
@@ -51,7 +58,6 @@ async def websocket_endpoint(
                 data = await ws.receive_json()
 
                 ev = ClientSocketEvent(event=data).event
-
                 match ev:
                     case ClientSelectWordEvent():
                         game.handle_choose_word(ev.word)
@@ -59,18 +65,13 @@ async def websocket_endpoint(
                     case ClientGuessEvent():
                         game.handle_guess(conn.user.id, ev.message)
 
-                    case ClientSketchEvent():
-                        new_ev = ServerSketchEvent(
-                            **ev.__dict__,
-                            id=str(uuid4()),
-                            sender=conn.user,
-                        )
-                        users_except_self = [
-                            user_id for user_id in game.users if user_id != conn.user.id
-                        ]
-                        await manager.multicast(users_except_self, new_ev.model_dump())
+                    case ClientSketchPathEvent():
+                        game.handle_add_path(ev.path, ev.sketching)
 
-            except ValidationError:
+                    case ClientSketchEvent():
+                        game.handle_update_sketch(ev.sketch)
+
+            except ValidationError as e:
                 await manager.send_invalid_schema(conn.user.id, data)
 
     except WebSocketDisconnect:

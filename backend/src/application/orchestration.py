@@ -2,6 +2,7 @@ from decimal import Rounded
 from typing import Dict
 from src.domain.game.leaderboard import LeaderboardScores
 from src.domain.game.events import (
+    AddedPath,
     GameEnded,
     GamePaused,
     GameStarted,
@@ -12,6 +13,7 @@ from src.domain.game.events import (
     PlayerJoined,
     GameUpdated,
     RoundEnded,
+    SketchUpdated,
     TurnEnded,
     WordSelected,
     WordSelectionStarted,
@@ -25,6 +27,8 @@ from src.ws.events.server import (
     ServerGameUpdatedEvent,
     ServerGuessEvent,
     ServerPlayerJoinedEvent,
+    ServerSketchEvent,
+    ServerSketchPathEvent,
     ServerWordSelectionStartedEvent,
     ServerWordSelectedEvent,
     ServerLeaderboardUpdatedEvent,
@@ -270,6 +274,7 @@ async def gameUpdatedHandler(dispatch: DispatchEvent):
         turn=ev.turn,
         max_turns=ev.max_turns,
         leaderboard=leaderboard,
+        sketch=ev.sketch,
     )
 
     await manager.send_message(ev.user_id, new_ev.model_dump())
@@ -334,6 +339,44 @@ async def gameEndedHandler(dispatch: DispatchEvent):
     await asyncio.sleep(ev.cooldown)
 
 
+async def sketchUpdatedHandler(dispatch: DispatchEvent) -> None:
+    if not isinstance(dispatch.event, SketchUpdated):
+        return
+
+    ev = dispatch.event
+
+    sketcher = manager.active_conns[ev.sketcher_id].user
+
+    new_ev = ServerSketchEvent(
+        id=str(uuid4()), type="sketch", sketch=ev.sketch, sender=sketcher
+    )
+
+    players = game_rooms.rooms[dispatch.room_id].game.users
+    users_except_self = [user_id for user_id in players if user_id != ev.sketcher_id]
+    await manager.multicast(users_except_self, new_ev.model_dump())
+
+
+async def addedPathHandler(dispatch: DispatchEvent) -> None:
+    if not isinstance(dispatch.event, AddedPath):
+        return
+
+    ev = dispatch.event
+
+    sketcher = manager.active_conns[ev.sketcher_id].user
+
+    new_ev = ServerSketchPathEvent(
+        id=str(uuid4()),
+        type="sketch_path",
+        path=ev.path,
+        sketching=ev.sketching,
+        sender=sketcher,
+    )
+
+    players = game_rooms.rooms[dispatch.room_id].game.users
+    users_except_self = [user_id for user_id in players if user_id != ev.sketcher_id]
+    await manager.multicast(users_except_self, new_ev.model_dump())
+
+
 event_bus.subscribe("player_joined", playerJoinedHandler)
 event_bus.subscribe("word_selection_started", wordSelectionStartedHandler)
 event_bus.subscribe("game_started", gameStartedHandler)
@@ -347,3 +390,5 @@ event_bus.subscribe("game_updated", gameUpdatedHandler)
 event_bus.subscribe("game_paused", gamePausedHandler)
 event_bus.subscribe("game_ended", gameEndedHandler)
 event_bus.subscribe("round_ended", roundEndedHandler)
+event_bus.subscribe("sketch_updated", sketchUpdatedHandler)
+event_bus.subscribe("added_path", addedPathHandler)

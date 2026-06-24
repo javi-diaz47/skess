@@ -17,13 +17,19 @@ class SketchPath(BaseModel):
     color: str
 
 
-class ClientSketchEvent(ClientEvent):
-    type: Literal["sketch"]
+class ClientSketchPathEvent(ClientEvent):
+    type: Literal["sketch_path"]
 
     path: SketchPath
 
     # Sketching now
     sketching: bool
+
+
+class ClientSketchEvent(ClientEvent):
+    type: Literal["sketch"]
+
+    sketch: List[SketchPath]
 
 
 class ClientSelectWordEvent(ClientEvent):
@@ -33,4 +39,9 @@ class ClientSelectWordEvent(ClientEvent):
 
 
 class ClientSocketEvent(BaseModel):
-    event: Union[ClientGuessEvent, ClientSketchEvent, ClientSelectWordEvent]
+    event: Union[
+        ClientGuessEvent,
+        ClientSketchEvent,
+        ClientSketchPathEvent,
+        ClientSelectWordEvent,
+    ]

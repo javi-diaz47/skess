@@ -49,13 +49,20 @@ class ServerGameEndedEvent(ServerEvent):
     leaderboard: List[UserWebSocket]
 
 
-class ServerSketchEvent(ServerEvent):
-    type: Literal["sketch"]
+class ServerSketchPathEvent(ServerEvent):
+    type: Literal["sketch_path"]
 
     path: SketchPath
 
-    # Sketching now
     sketching: bool
+
+    sender: UserWebSocket
+
+
+class ServerSketchEvent(ServerEvent):
+    type: Literal["sketch"]
+
+    sketch: List[SketchPath]
 
     sender: UserWebSocket
 
@@ -79,6 +86,8 @@ class ServerGameUpdatedEvent(ServerEvent):
     guess_limit: int
 
     leaderboard: List[UserWebSocket]
+
+    sketch: List[SketchPath]
 
 
 class ServerWordSelectionStartedEvent(ServerEvent):

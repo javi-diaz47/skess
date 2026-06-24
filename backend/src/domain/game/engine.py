@@ -7,6 +7,7 @@ from src.domain.game.constants import (
     WORDS,
 )
 from src.domain.game.events import (
+    AddedPath,
     DomainEvent,
     GameEnded,
     GamePaused,
@@ -18,6 +19,7 @@ from src.domain.game.events import (
     PlayerGuessedIncorrectly,
     PlayerJoined,
     RoundEnded,
+    SketchUpdated,
     TurnEnded,
     WordSelected,
     WordSelectionStarted,
@@ -34,6 +36,8 @@ from src.domain.game.state import (
 import datetime as dt
 import asyncio
 import random
+
+from src.ws.events.client import SketchPath
 
 
 class Game:
@@ -81,6 +85,8 @@ class Game:
 
         self._current_timestamp: float = 0.0
 
+        self._sketch: List[SketchPath] = []
+
         self._players_who_sketched: Set[str] = set()
         self.emit_event = emit_event
 
@@ -97,6 +103,31 @@ class Game:
         if isinstance(self._phase, ActiveState):
             return dt.datetime.timestamp(self._phase.timestamp)
 
+    def handle_add_path(self, path: SketchPath, sketching: bool) -> None:
+        self._sketch.append(path)
+
+        events: List[DomainEvent] = [
+            AddedPath(
+                type="added_path",
+                path=path,
+                sketcher_id=self._sketcher_id,
+                sketching=sketching,
+            )
+        ]
+        asyncio.create_task(self.emit_event(events))
+
+    def handle_update_sketch(self, sketch: List[SketchPath]) -> None:
+        self._sketch = sketch
+
+        events: List[DomainEvent] = [
+            SketchUpdated(
+                type="sketch_updated",
+                sketch=self._sketch,
+                sketcher_id=self._sketcher_id,
+            )
+        ]
+        asyncio.create_task(self.emit_event(events))
+
     def add_user(self, user_id) -> None:
         self._users.append(user_id)
         self._leaderboard.add_user(user_id)
@@ -107,6 +138,9 @@ class Game:
         self._users.remove(user_id)
         self._leaderboard.remove_user(user_id)
         self._max_turns = len(self._users)
+
+        if len(self._users) >= 2:
+            return
 
         if self._task_on_hint is not None:
             self._task_on_hint.cancel()
@@ -156,6 +190,7 @@ class Game:
                     turn=self._current_turn,
                     max_turns=self._max_turns,
                     leaderboard=self._leaderboard.get_leaderboard(),
+                    sketch=self._sketch,
                 )
             ]
             asyncio.create_task(self.emit_event(events))
@@ -511,6 +546,7 @@ class Game:
         self._correct_guessers = set()
         self._turn_scores.reset_scores()
         self._leaderboard.reset_scores()
+        self._sketch = []
 
         # if self._current_turn >= self._max_turns:
         #    self._current_turn = 0

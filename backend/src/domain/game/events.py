@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import List, Literal, Union
 
 from src.domain.game.leaderboard import LeaderboardScores
+from src.ws.events.client import SketchPath
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,6 +53,26 @@ class LeaderboardUpdated:
     type: Literal["leaderboard_updated"]
 
     leaderboard: LeaderboardScores
+
+
+@dataclass(frozen=True, slots=True)
+class AddedPath:
+    type: Literal["added_path"]
+
+    path: SketchPath
+
+    sketching: bool
+
+    sketcher_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class SketchUpdated:
+    type: Literal["sketch_updated"]
+
+    sketch: List[SketchPath]
+
+    sketcher_id: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -139,6 +160,8 @@ class GameUpdated:
     max_turns: int
     leaderboard: LeaderboardScores
 
+    sketch: List[SketchPath]
+
 
 @dataclass(frozen=True, slots=True)
 class GamePaused:
@@ -163,4 +186,6 @@ type DomainEvent = Union[
     PlayerGuessedIncorrectly,
     HintRevealed,
     TurnEnded,
+    SketchUpdated,
+    AddedPath,
 ]
