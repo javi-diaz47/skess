@@ -1,24 +1,24 @@
-import { type ButtonHTMLAttributes, type CSSProperties, useId } from "react";
+import { type ButtonHTMLAttributes, type CSSProperties, useId } from 'react'
 
 export interface AroundProps extends Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
-  "children"
+  'children'
 > {
-  duration?: number;
-  [key: `data-${string}`]: string | number | boolean | null | undefined;
+  duration?: number
+  [key: `data-${string}`]: string | number | boolean | null | undefined
 }
 
 export function DarkThemeToggle({
   duration = 500,
   className,
-  type = "button",
-  title = "Toggle theme",
-  "aria-label": ariaLabel = "Toggle theme",
+  type = 'button',
+  title = 'Toggle theme',
+  'aria-label': ariaLabel = 'Toggle theme',
   ...props
 }: AroundProps) {
-  const toggleId = useId();
+  const toggleId = useId()
 
-  const clipMainId = `toggles.dev-around-main-${toggleId}`;
+  const clipMainId = `toggles.dev-around-main-${toggleId}`
 
   return (
     <button
@@ -26,25 +26,22 @@ export function DarkThemeToggle({
       title={title}
       aria-label={ariaLabel}
       className={className}
-      {...props}
-    >
+      {...props}>
       <svg
         width="2em"
         height="2em"
         viewBox="0 0 32 32"
         aria-hidden="true"
-        fill={"currentColor"}
+        fill={'currentColor'}
         style={
-          { "--toggles-around--duration": `${duration}ms` } as CSSProperties
-        }
-      >
+          { '--toggles-around--duration': `${duration}ms` } as CSSProperties
+        }>
         <defs>
           <clipPath
             id={clipMainId}
-            className="[transform-origin:center] [transition:transform_calc(var(--toggles-around--duration)_*_0.6)_ease] dark:[transform:rotate(-90deg)] dark:[transition:transform_var(--toggles-around--duration)_ease]"
-          >
+            className="[transform-origin:center] [transition:transform_calc(var(--toggles-around--duration)_*_0.6)_ease] dark:[transform:rotate(-90deg)] dark:[transition:transform_var(--toggles-around--duration)_ease]">
             <path
-              d={"M0 0h42v30a1 1 0 00-16 13H0Z"}
+              d={'M0 0h42v30a1 1 0 00-16 13H0Z'}
               className="transition-[d,translate] [transition-duration:calc(var(--toggles-around--duration)_*_0.6)] [transition-timing-function:ease] dark:[d:path('M-12_-14h42v30a1_1_0_00-16_13H0Z')] dark:not-supports-[d:path('M0_0')]:-translate-x-[12px] dark:not-supports-[d:path('M0_0')]:-translate-y-[14px] dark:[transition-duration:var(--toggles-around--duration)]"
             />
           </clipPath>
@@ -97,5 +94,5 @@ export function DarkThemeToggle({
         </g>
       </svg>
     </button>
-  );
+  )
 }
