@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { SessionContext } from '../context/session/SessionContext'
 import { DarkThemeToggle } from './DarkThemeToggle'
 import { SoundFxContext } from '../context/SoundFX/SoundFXContext'
@@ -33,7 +33,20 @@ export function Header() {
     localStorage.setItem('theme', theme)
   }, [theme])
 
+  const menuRef = useRef<HTMLDivElement>(null)
   const [isOpen, setIsOpen] = useState(false)
+
+  useEffect(() => {
+    const close = (ev: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(ev.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', close)
+
+    return () => document.removeEventListener('mousedown', close)
+  })
 
   return (
     <header className="text-sm md:text-base text-text-900 dark:text-text-50 flex justify-between items-center md:py-4 rounded-full">
@@ -131,6 +144,7 @@ export function Header() {
             )}
           </button>
           <div
+            ref={menuRef}
             className={`
             flex items-center gap-2 absolute right-0 top-10 border-2
             shadow-lg shadow-background-200 dark:shadow-background-700 

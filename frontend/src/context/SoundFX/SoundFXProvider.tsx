@@ -22,7 +22,7 @@ export const SoundFxProvider = ({ children }: { children: ReactNode }) => {
 
   const syncVolume = (newVolume: number) => {
     if (!sounds.current) return
-    console.log(newVolume)
+
     Object.values(sounds.current).forEach((audio) => {
       audio.volume = newVolume / MAX_VOLUME
     })
