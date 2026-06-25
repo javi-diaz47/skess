@@ -1,369 +1,410 @@
-from src.game.contants import MAX_SCORE
-from src.game.engine import Game, GameTimeLimit, IdleState, ActiveState
-from time import sleep
-import math
+import asyncio
+from typing import List
+import pytest
+from src.domain.game.engine import Game
+from src.domain.game.events import (
+    DomainEvent,
+    GameStarted,
+    HintRevealed,
+    LeaderBoardUpdated,
+    PlayerGuessedCorrectly,
+    PlayerGuessedIncorrectly,
+    WordSelected,
+    WordSelectionStarted,
+)
+from src.domain.game.state import (
+    ActiveState,
+    GameTimeLimit,
+    IdleState,
+)
 
-WORD_NOT_IN_WORDS_DB = "WORD_NOT_IN_WORDS_DB"
+
+class EventCollector:
+    def __init__(self):
+        self.events: List[DomainEvent] = []
+
+    async def emit(self, events: List[DomainEvent]):
+        self.events.extend(events)
 
 
-def test_game_initialization():
-    users = ["a", "b"]
-    game = Game(users)
+@pytest.mark.asyncio
+async def test_game_initialization():
+    collector = EventCollector()
 
-    assert game._users == users
+    game = Game(
+        users=["a", "b"],
+        emit_event=collector.emit,
+    )
+
+    assert game.users == ["a", "b"]
     assert game._word == ""
     assert game._sketcher_index == -1
 
-    assert isinstance(game.get_phase(), IdleState)
-    assert game.get_phase().state == "start"
+    assert isinstance(game._phase, IdleState)
 
 
-def test_start_returns_valid_data():
-    users = ["a", "b", "c"]
-    game = Game(users)
+@pytest.mark.asyncio
+async def test_start_emits_events():
+    collector = EventCollector()
 
-    result = game.start()
-    assert result is not None
+    game = Game(
+        users=["a", "b"],
+        emit_event=collector.emit,
+    )
 
-    sketcher, words = result
+    game.start()
 
-    assert sketcher in users
-    assert len(words) == 3
+    await asyncio.sleep(0)
 
-    assert isinstance(game.get_phase(), ActiveState)
-    assert game.get_phase().state == "choose"
+    assert isinstance(game._phase, ActiveState)
+    assert game._phase.state == "choose"
 
+    assert any(isinstance(ev, WordSelectionStarted) for ev in collector.events)
 
-def test_start_sets_choose_state_with_timestamp():
-    game = Game(["a", "b"])
-
-    result = game.start()
-    assert result is not None
-
-    assert isinstance(game.get_phase(), ActiveState)
-    assert game.get_phase().state == "choose"
-    assert game.get_phase().timestamp is not None
+    assert any(isinstance(ev, GameStarted) for ev in collector.events)
 
 
-def test_start_rotates_sketcher():
-    users = ["a", "b", "c"]
-    game = Game(users)
+@pytest.mark.asyncio
+async def test_start_rotates_sketcher():
+    collector = EventCollector()
 
-    first_result = game.start()
-    assert first_result is not None
+    game = Game(
+        users=["a", "b", "c"],
+        emit_event=collector.emit,
+    )
+
+    game.start()
+
     first = game._sketcher_index
 
     game.end()
 
-    second_result = game.start()
-    assert second_result is not None
+    await asyncio.sleep(0)
+
     second = game._sketcher_index
 
-    assert second == (first + 1) % len(users)
+    assert second == (first + 1) % len(game.users)
 
 
-def test_choose_sets_word_and_guess_state():
-    game = Game(["a", "b"])
+@pytest.mark.asyncio
+async def test_choose_word_emits_event():
+    collector = EventCollector()
 
-    result = game.start()
-    assert result is not None
+    game = Game(
+        users=["a", "b"],
+        emit_event=collector.emit,
+        dictionary=["cat"],
+    )
 
-    _, words = result
-    game.choose(words[0])
+    game.start()
 
-    assert game._word == words[0]
-    assert isinstance(game.get_phase(), ActiveState)
-    assert game.get_phase().state == "guess"
-    assert game.get_phase().timestamp is not None
+    await asyncio.sleep(0)
 
+    game.handle_choose_word("cat")
 
-def test_choose_rejects_word_not_in_options():
-    game = Game(["a", "b"])
+    await asyncio.sleep(0)
 
-    result = game.start()
-    assert result is not None
+    assert game._word == "cat"
 
-    game.choose(WORD_NOT_IN_WORDS_DB)
+    assert isinstance(game._phase, ActiveState)
+    assert game._phase.state == "guess"
 
-    assert game._word == ""
-    assert game.get_phase().state == "choose"
-
-
-def test_choose_clears_available_words_after_selection():
-    game = Game(["a", "b"])
-
-    result = game.start()
-    assert result is not None
-
-    _, words = result
-    game.choose(words[0])
-
-    assert game._words == []
+    assert any(isinstance(ev, WordSelected) for ev in collector.events)
 
 
-def test_end_clears_round_state():
-    game = Game(["a", "b"])
+@pytest.mark.asyncio
+async def test_choose_invalid_word_does_not_change_state():
+    collector = EventCollector()
 
-    result = game.start()
-    assert result is not None
+    game = Game(
+        users=["a", "b"],
+        emit_event=collector.emit,
+        dictionary=["cat"],
+    )
 
-    _, words = result
-    game.choose(words[0])
+    game.start()
 
-    game.end()
+    await asyncio.sleep(0)
+
+    game.handle_choose_word("dog")
+
+    await asyncio.sleep(0)
 
     assert game._word == ""
-    assert game._words == []
+
+    assert game._phase.state == "choose"
+
+    assert not any(isinstance(ev, WordSelected) for ev in collector.events)
 
 
-def test_guess_correct_updates_score():
-    game = Game(["a", "b"])
+@pytest.mark.asyncio
+async def test_correct_guess_emits_events():
+    collector = EventCollector()
 
-    result = game.start()
-    assert result is not None
+    game = Game(
+        users=["a", "b"],
+        emit_event=collector.emit,
+        dictionary=["cat"],
+    )
 
-    sketcher_id, words = result
-    game.choose(words[0])
+    game.start()
 
-    guesser_id = ""
-    if sketcher_id == "a":
-        guesser_id = "b"
-    else:
-        guesser_id = "a"
+    await asyncio.sleep(0)
 
-    result = game.guess(guesser_id, words[0])
+    sketcher = game._sketcher_id
 
-    assert result is not None
-    assert (guesser_id, MAX_SCORE) in result
+    guesser = "a" if sketcher == "b" else "b"
 
+    game.handle_choose_word("cat")
 
-def test_guess_correct_outside_time_limit():
-    game = Game(["a", "b"], GameTimeLimit(guess=1))
+    await asyncio.sleep(0)
 
-    result = game.start()
-    assert result is not None
+    game.handle_guess(guesser, "cat")
 
-    _, words = result
-    game.choose(words[0])
+    await asyncio.sleep(0)
 
-    sleep(2)
+    assert any(isinstance(ev, PlayerGuessedCorrectly) for ev in collector.events)
 
-    result = game.guess("a", words[0])
-    assert result is None
+    assert any(isinstance(ev, LeaderBoardUpdated) for ev in collector.events)
 
 
-def test_guess_incorrect_returns_none():
-    game = Game(["a", "b"])
+@pytest.mark.asyncio
+async def test_incorrect_guess_emits_event():
+    collector = EventCollector()
 
-    result = game.start()
-    assert result is not None
+    game = Game(
+        users=["a", "b"],
+        emit_event=collector.emit,
+        dictionary=["cat"],
+    )
 
-    _, words = result
-    game.choose(words[0])
+    game.start()
 
-    result = game.guess("a", WORD_NOT_IN_WORDS_DB)
+    await asyncio.sleep(0)
 
-    assert result is None
+    game.handle_choose_word("cat")
 
+    await asyncio.sleep(0)
 
-def test_guess_does_nothing_outside_guess_state():
-    game = Game(["a", "b"])
+    game.handle_guess("a", "dog")
 
-    result = game.guess("a", WORD_NOT_IN_WORDS_DB)
+    await asyncio.sleep(0)
 
-    assert result is None
-
-
-def test_end_returns_leaderboard_and_sets_end_state():
-    game = Game(["a", "b"])
-
-    result = game.start()
-    assert result is not None
-
-    sketcher_id, words = result
-    game.choose(words[0])
-
-    if sketcher_id == "a":
-        game.guess("b", words[0])
-    else:
-        game.guess("a", words[0])
-
-    board = game.end()
-
-    assert ("a", MAX_SCORE) in board
-    assert isinstance(game.get_phase(), IdleState)
-    assert game.get_phase().state == "end"
+    assert any(isinstance(ev, PlayerGuessedIncorrectly) for ev in collector.events)
 
 
-def test_add_user_adds_to_users_and_leaderboard():
-    game = Game(["a"])
+@pytest.mark.asyncio
+async def test_guess_outside_guess_phase_emit_incorrect_event():
+    collector = EventCollector()
+
+    game = Game(
+        users=["a", "b"],
+        emit_event=collector.emit,
+        dictionary=["cat"],
+        time_limits=GameTimeLimit(guess=1),
+    )
+
+    game.handle_guess("a", "cat")
+
+    await asyncio.sleep(1.5)
+
+    assert any(isinstance(ev, PlayerGuessedIncorrectly) for ev in collector.events)
+
+
+@pytest.mark.asyncio
+async def test_hint_events_are_emitted():
+    collector = EventCollector()
+
+    game = Game(
+        users=["a", "b"],
+        emit_event=collector.emit,
+        dictionary=["castle"],
+        time_limits=GameTimeLimit(guess=1),
+    )
+
+    game.start()
+
+    await asyncio.sleep(0)
+
+    game.handle_choose_word("castle")
+
+    await asyncio.sleep(1.5)
+
+    hint_events = [ev for ev in collector.events if isinstance(ev, HintRevealed)]
+
+    assert len(hint_events) > 0
+
+
+def get_letter_count(word: str):
+    count = 0
+    for ch in word:
+        if ch.isalpha():
+            count += 1
+    return count
+
+
+@pytest.mark.asyncio
+async def test_hidden_word_generation():
+    collector = EventCollector()
+
+    WORD = "ada-love lace"
+
+    game = Game(
+        users=["a", "b"],
+        emit_event=collector.emit,
+        dictionary=[WORD],
+        time_limits=GameTimeLimit(guess=1),
+        max_hints=3,
+    )
+
+    game.start()
+
+    await asyncio.sleep(0)
+
+    game.handle_choose_word(WORD)
+
+    assert game._hint == "___-____ ____"
+
+    expected = 1
+
+    await asyncio.sleep(2)
+    for ev in collector.events:
+        if isinstance(ev, HintRevealed):
+            if expected == 4:
+                expected = get_letter_count(WORD)
+
+            assert get_letter_count(ev.hint) == expected
+            expected += 1
+
+
+@pytest.mark.asyncio
+async def test_word_letter_count():
+    collector = EventCollector()
+
+    game = Game(
+        users=["a", "b"],
+        emit_event=collector.emit,
+        dictionary=["ada-love lace"],
+    )
+
+    game.start()
+
+    await asyncio.sleep(0)
+
+    game.handle_choose_word("ada-love lace")
+
+    await asyncio.sleep(0)
+
+    assert game.word_letter_count() == 11
+
+
+@pytest.mark.asyncio
+async def test_add_user():
+    collector = EventCollector()
+
+    game = Game(
+        users=["a"],
+        emit_event=collector.emit,
+    )
 
     game.add_user("b")
 
-    assert ("b", 0) in game.get_leaderboard()
+    assert "b" in game.users
 
 
-def test_add_user_affects_sketcher_rotation():
-    game = Game(["a", "b"])
+@pytest.mark.asyncio
+async def test_remove_user():
+    collector = EventCollector()
 
-    first_result = game.start()
-    assert first_result is not None
+    game = Game(
+        users=["a", "b"],
+        emit_event=collector.emit,
+    )
 
-    game.end()
-    game.add_user("c")
+    game.remove_user("a")
 
-    second_result = game.start()
-    assert second_result is not None
-    second = game._sketcher_index
-
-    assert 0 <= second < 3
+    assert "a" not in game.users
 
 
-def test_add_user_can_guess():
-    game = Game(["a", "b"])
+@pytest.mark.asyncio
+async def test_round_progression():
+    collector = EventCollector()
 
-    result = game.start()
-    assert result is not None
+    users = ["a", "b"]
 
-    _, words = result
-    game.choose(words[0])
+    game = Game(
+        users=users,
+        emit_event=collector.emit,
+        dictionary=["cat"],
+        max_rounds=3,
+        time_limits=GameTimeLimit(
+            choose=0,
+            guess=0,
+        ),
+    )
 
-    game.add_user("c")
+    expected_round = 0
 
-    result = game.guess("c", words[0])
+    for turn in range(6):
+        game.start()
 
-    assert result is not None
-    assert ("c", MAX_SCORE) in result
+        await asyncio.sleep(0)
 
+        expected_turn = (turn % len(users)) + 1
 
-def test_start_returns_none_when_game_already_active():
-    game = Game(["a", "b"])
+        if turn % len(users) == 0:
+            expected_round += 1
 
-    first = game.start()
-    assert first is not None
+        assert game._current_turn == expected_turn
+        assert game._current_round == expected_round
 
-    second = game.start()
+        game.handle_choose_word("cat")
 
-    assert second is None
-    assert isinstance(game.get_phase(), ActiveState)
-
-
-def test_start_resets_guessed_users():
-    game = Game(["a", "b"])
-
-    result = game.start()
-    assert result is not None
-
-    sketcher_id, words = result
-    game.choose(words[0])
-    game.guess("a", words[0])
-
-    guesser_id = ""
-    if sketcher_id == "a":
-        guesser_id = "b"
-    else:
-        guesser_id = "a"
-
-    result = game.guess(guesser_id, words[0])
-
-    assert guesser_id in game.get_guessed()
-
-    game.end()
-
-    next_round = game.start()
-    assert next_round is not None
-
-    assert game.get_guessed() == []
+        await asyncio.sleep(0)
 
 
-def test_state_transitions_full_flow():
-    game = Game(["a", "b"])
+@pytest.mark.asyncio
+async def test_end_emits_turn_end():
+    collector = EventCollector()
 
-    assert isinstance(game.get_phase(), IdleState)
-    assert game.get_phase().state == "start"
+    game = Game(
+        users=["a", "b"],
+        emit_event=collector.emit,
+        dictionary=["cat"],
+        time_limits=GameTimeLimit(guess=1),
+    )
 
-    result = game.start()
-    assert result is not None
+    game.start()
 
-    _, words = result
-    assert isinstance(game.get_phase(), ActiveState)
-    assert game.get_phase().state == "choose"
+    await asyncio.sleep(0)
 
-    game.choose(words[0])
-    assert isinstance(game.get_phase(), ActiveState)
-    assert game.get_phase().state == "guess"
+    game.handle_choose_word("cat")
 
-    game.guess("a", words[0])
-    assert game.get_phase().state == "guess"
+    await asyncio.sleep(1.5)
 
-    game.end()
-    assert isinstance(game.get_phase(), IdleState)
-    assert game.get_phase().state == "end"
+    assert any(ev.type == "turn_ended" for ev in collector.events)
 
 
-def test_remove_user():
-    user_id = "a"
+@pytest.mark.asyncio
+async def test_sketcher_guess_emit_incorrectly_event():
+    collector = EventCollector()
 
-    game = Game(["a", "b"])
+    users = ["a", "b"]
 
-    game.remove_user(user_id)
+    game = Game(
+        users=users,
+        emit_event=collector.emit,
+        dictionary=["cat"],
+    )
 
-    assert user_id not in game._users
+    game.start()
+    await asyncio.sleep(0)
 
+    game.handle_choose_word("cat")
+    await asyncio.sleep(0)
 
-def test_end_add_sketcher_score_max_score():
-    game = Game(["a", "b", "c"])
+    sketcher = game._sketcher_id
+    game.handle_guess(sketcher, "cat")
+    await asyncio.sleep(0)
 
-    result = game.start()
-    assert result is not None
-
-    sketcher_id, words = result
-    game.choose(words[0])
-
-    for user_id in ["a", "b", "c"]:
-        if user_id != sketcher_id:
-            game.guess(user_id, words[0])
-
-    board = game.end()
-
-    expected_sketcher_score = MAX_SCORE
-
-    assert (sketcher_id, expected_sketcher_score) in board
-
-
-def test_end_add_sketcher_score_only_one_guessed():
-    users = ["a", "b", "c"]
-    game = Game(users)
-
-    result = game.start()
-    assert result is not None
-
-    sketcher_id, words = result
-    game.choose(words[0])
-
-    guesser_id = ""
-    for user_id in users:
-        if user_id != sketcher_id:
-            guesser_id = user_id
-            break
-
-    game.guess(guesser_id, words[0])
-
-    board = game.end()
-    expected_sketcher_score = math.floor(MAX_SCORE / (len(users) - 1))
-
-    assert (sketcher_id, expected_sketcher_score) in board
-
-
-def test_sketcher_doesnt_score_when_guess():
-    users = ["a", "b", "c"]
-    game = Game(users)
-
-    result = game.start()
-    assert result is not None
-
-    sketcher_id, words = result
-    game.choose(words[0])
-    game.guess(sketcher_id, words[0])
-
-    assert (sketcher_id, 0) in game.end()
+    assert any(isinstance(ev, PlayerGuessedIncorrectly) for ev in collector.events)

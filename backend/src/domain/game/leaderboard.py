@@ -7,9 +7,20 @@ class Leaderboard:
     def __init__(self, users_id: List[str]) -> None:
         self._scores: Dict[str, int] = {user_id: 0 for user_id in users_id}
 
+    def replace_score(self, user_id: str, score: int) -> LeaderboardScores:
+        if user_id in self._scores:
+            self._scores[user_id] = score
+        return self.get_leaderboard()
+
     def update_score(self, user_id: str, score: int) -> LeaderboardScores:
         if user_id in self._scores:
             self._scores[user_id] += score
+
+        return self.get_leaderboard()
+
+    def reset_scores(self) -> LeaderboardScores:
+        for user_id in self._scores:
+            self._scores[user_id] = 0
 
         return self.get_leaderboard()
 
