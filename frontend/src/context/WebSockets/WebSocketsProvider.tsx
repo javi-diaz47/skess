@@ -87,7 +87,7 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (session === null || ws.current !== null) return
 
-    const URI = 'ws://127.0.0.1:8000/ws'
+    const URI = `ws://${import.meta.env.VITE_BACKEND_URL}/ws`
     ws.current = new WebSocket(
       `${URI}/${session.id}/${session.name}?room_id=${session.room_id}`,
     )
